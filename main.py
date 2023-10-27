@@ -24,5 +24,11 @@ END
 """
 
 x = torch.load('data/audio_data_correct_format.pth')
+
+x1 = torch.split(x, 1000, 0)
+print(x1[0].shape)
 awt = DWT1d()
-awt.fit(x)
+
+print(awt.h0)
+awt.fit(x1[0])
+print(awt.h0)

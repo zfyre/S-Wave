@@ -41,7 +41,7 @@ class DWT1d(AbstractWT):
         h0 = init_filter(h0, init_factor, noise_factor, const_factor)
 
         # parameterize as a gradient-tensor
-        self.h0 = nn.Parameter(h0, requires_grad=True)
+        self.h0 = nn.Parameter(h0, requires_grad=True, device=self.device)
         
 
         # Replacing the Filters with a CNN model

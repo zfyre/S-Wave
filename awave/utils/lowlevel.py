@@ -520,7 +520,7 @@ def prep_filt_afb1d(h0, h1, device=None):
     """
     h0 = np.array(h0[::-1]).ravel()
     h1 = np.array(h1[::-1]).ravel()
-    ic(h0, h1)
+    # ic(h0, h1)
     t = torch.get_default_dtype()
     h0 = torch.tensor(h0, device=device, dtype=t).reshape((1, 1, -1))
     h1 = torch.tensor(h1, device=device, dtype=t).reshape((1, 1, -1))
