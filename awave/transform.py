@@ -5,14 +5,15 @@ import torch.nn as nn
 from awave.losses import get_loss_f
 from awave.train import Trainer
 
+from icecream import ic
 
 class AbstractWT(nn.Module):
 
     def fit(self,
             X=None,
             train_loader=None,
-            filter_model=None,
             lr: float = 0.001,
+            batch_size: int = 32,
             num_epochs: int = 20,
             seed: int = 42,
             target=6,
@@ -79,11 +80,14 @@ class AbstractWT(nn.Module):
             # Creating the train_loader
             train_loader = torch.utils.data.DataLoader(X,
                                                        shuffle=True,
-                                                       batch_size=len(X))
+                                                       batch_size=batch_size)
         #             print(iter(train_loader).next())
 
+        ic(train_loader)
+
         # Get optimizer initialized for the wavelet Transform parameters.
-        params = list(self.parameters())
+        # params = list(self.parameters())
+        params = nn.ParameterList(self.parameters())
         optimizer = torch.optim.Adam(params, lr=lr)
 
         # Get the Loss imported from the get_loss_f function.

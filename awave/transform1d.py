@@ -5,6 +5,7 @@ from awave.utils import lowlevel
 from awave.transform import AbstractWT
 from awave.utils.misc import init_filter, low_to_high
 
+from icecream import ic
 
 
 class DWT1d(AbstractWT):
@@ -32,6 +33,7 @@ class DWT1d(AbstractWT):
     def __init__(self, wave='db3',filter_model = None, mode='zero', J=5, init_factor=1, noise_factor=0, const_factor=0, device='cpu'):
         super().__init__()
 
+        self.device = device
         self.filter_model = filter_model
 
         # Load the wavelet from pywt
@@ -41,16 +43,14 @@ class DWT1d(AbstractWT):
         h0 = init_filter(h0, init_factor, noise_factor, const_factor)
 
         # parameterize as a gradient-tensor
-        self.h0 = nn.Parameter(h0, requires_grad=True, device=self.device)
+        self.h0 = nn.Parameter(h0, requires_grad=True)
         
 
         # Replacing the Filters with a CNN model
-        # sefl.h0 = CNN_Model
-        self.h0 = self.h0.to(device)
+        # sefl.h0 = CNN_Models
         self.J = J
         self.mode = mode
         self.wt_type = 'DWT1d'
-        self.device = device
 
     def forward(self, x):
 
@@ -74,11 +74,12 @@ class DWT1d(AbstractWT):
         # Solve the need of 2 functions i.e mode_to_int and int_to_mode by making it an enum
         mode = lowlevel.mode_to_int(self.mode)
 
-
+        ic(x.shape)
         # Getting the filter from the model:
         if self.filter_model is not None:
             self.h0 = self.filter_model(x)
             
+        ic(self.h0.shape)
         h1 = low_to_high(self.h0)
 
         # Do a multilevel transform

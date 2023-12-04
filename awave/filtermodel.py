@@ -39,19 +39,10 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # Dimensions
 
-N_FEATURES = 32
-N_MULT_FACTOR = 4
-
-# Size of first linear layer
-N_HIDDEN=N_FEATURES * N_MULT_FACTOR
-
-# CNN kernel size
-N_CNN_KERNEL = 3 # Pre-defined
-MAX_POOL_KERNEL = 4 # Pre-defined
-
-
+N_INFEATURES = 1024 # Signal Length
+N_INCHANNELS = 1 # number of input signal channels
 N_OUTPUT_FILTER_SIZE = 6 # output filter size
-N_CHANNELS = 1 # number of input signal channels
+
 
 DEBUG_ON=True
 
@@ -60,7 +51,7 @@ def debug(x):
         print ('(x.size():' + str (x.size()))
 
 class FilterConv(nn.Module):
-    def __init__(self, n_feature, n_hidden=N_HIDDEN, n_output=N_OUTPUT_FILTER_SIZE, n_cnn_kernel=N_CNN_KERNEL, n_mult_factor=N_MULT_FACTOR, n_channels = N_CHANNELS):
+    def __init__(self, in_channels = N_INCHANNELS, out_channels=N_OUTPUT_FILTER_SIZE):
         """
         Params
         ------
@@ -76,32 +67,36 @@ class FilterConv(nn.Module):
             The n_hidden/n_features.
         """
         super(FilterConv, self).__init__()
-        self.n_feature = n_feature
-        self.n_hidden = n_hidden
-        self.n_output =  n_output 
-        self.n_cnn_kernel = n_cnn_kernel
-        self.n_mult_factor = n_mult_factor
-        self.n_l2_hidden=self.n_hidden * (self.n_mult_factor - self.n_cnn_kernel + 3)
-                        
-        self.linear = nn.Sequential(
-            torch.nn.Linear(self.n_feature, self.n_hidden),
-            torch.nn.Dropout(p=1 -.85),            
-            torch.nn.LeakyReLU (0.1),            
-            torch.nn.BatchNorm1d(self.n_hidden, eps=1e-05, momentum=0.1, affine=True)            
-        )                
-        self.conv = nn.Sequential(     
-            # Block 1       
-            torch.nn.Conv1d(in_channels = self.n_feature,out_channels = self.n_hidden, 
-                            kernel_size=(self.n_cnn_kernel,), stride=(1,), padding=(1,)),
-            torch.nn.Dropout(p=1 -.75),            
-            torch.nn.LeakyReLU (0.1),
-            torch.nn.BatchNorm1d(self.n_hidden, eps=1e-05, momentum=0.1, affine=True),      
-        )                       
-        self.out = nn.Sequential(
-            torch.nn.Linear(self.n_l2_hidden,
-                            self.n_output),  
-        )                
+        self.conv = nn.Sequential(
+            nn.Conv1d(in_channels,8,kernel_size=4,stride=2,padding=1,bias=False),
+            nn.BatchNorm1d(8),
+            nn.Dropout1d(1-.85),
+            nn.LeakyReLU(0.1),
 
+            # nn.Conv1d(8, 16,kernel_size=4,stride=2,padding=1,bias=False),
+            # nn.Dropout1d(1-.85),
+            # nn.BatchNorm1d(16),
+            # nn.LeakyReLU(0.1),
+
+            # nn.Conv1d(16, 32,kernel_size=4,stride=2,padding=1,bias=False),
+            # nn.Dropout1d(1-.85),
+            # nn.BatchNorm1d(32),
+            # nn.LeakyReLU(0.1),
+
+            # nn.Conv1d(32, 64,kernel_size=4,stride=2,padding=1,bias=False),
+            # nn.Dropout1d(1-.85),
+            # nn.BatchNorm1d(64),
+            # nn.LeakyReLU(0.1),
+
+            # nn.Conv1d(64, 128,kernel_size=4,stride=2,padding=1,bias=False),
+            # nn.Dropout1d(1-.85),
+            # nn.BatchNorm1d(128),
+            # nn.LeakyReLU(0.1),
+
+            nn.Flatten(),
+        )
+        self.out = nn.Linear(4096, out_features=out_channels)
+        summary(self)        
         
     def forward(self, x):
 
@@ -114,30 +109,18 @@ class FilterConv(nn.Module):
             h0 (tensor)
             the low pass filter for wavelet Transform.
         """
-
-        batch_size = x.data.shape[0] # must be calculated here in forward() since its is a dynamic size        
-        x = self.linear(x)  
-        debug(x)              
-        # for CNN        
-        x = x.view(batch_size,self.n_feature,self.n_mult_factor)
-        debug(x)              
         x = self.conv(x)
-        debug(x)              
-        # for Linear layer
-        # NOTE: self.n_l2_hidden is equal to x.shape[1]*x.shape[2]
-        x = x.view(batch_size, x.shape[1]*x.shape[2]) # Modifies the shape for self.out -> basically flattening the tensor             
-        debug(x)              
-        x=self.out(x)   
+        debug(x)
+        x = self.out(x)
         debug(x)
         return x
 
 
-net = FilterConv(n_feature=N_FEATURES)   # define the network    
+net = FilterConv()   # define the network    
 net.to(device=device)
 
-summary(net,input_size=(N_FEATURES,))
 
-x = torch.rand([2,N_FEATURES])
+x = torch.rand([32,1,N_INFEATURES])
 debug(x)
 
 y = net(x)

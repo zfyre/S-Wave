@@ -3,6 +3,7 @@ from copy import deepcopy
 import numpy as np
 import torch
 
+from icecream import ic
 
 class Trainer():
     """
@@ -131,6 +132,7 @@ class Trainer():
         self.optimizer.zero_grad()
         
         # transform
+        ic(data.shape)
         data_t = self.w_transform(data)
         
         # reconstruction

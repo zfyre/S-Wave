@@ -1,7 +1,8 @@
 import torch
 from awave.transform1d import DWT1d
+from awave.filtermodel import FilterConv
 
-
+from icecream import ic
 
 """
 START:
@@ -23,12 +24,12 @@ END
 
 """
 
+model = FilterConv(1024,6)
+
 x = torch.load('data/audio_data_correct_format.pth')
-
-x1 = torch.split(x, 1000, 0)
-print(x1[0].shape)
-awt = DWT1d()
-
-print(awt.h0)
-awt.fit(x1[0])
-print(awt.h0)
+x1 = torch.split(x, 2000, 0)
+ic(x1[0].shape)
+awt = DWT1d(filter_model=model)
+ic(awt.h0)
+awt.fit(X=x1[0])
+ic(awt.h0)
