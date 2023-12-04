@@ -1,7 +1,8 @@
 import torch
 from awave.transform1d import DWT1d
 from awave.filtermodel import FilterConv
-
+from config import *
+import time
 from icecream import ic
 
 """
@@ -23,23 +24,28 @@ STEP5: call the fit function to fit the Wavelet to the Graph.
 END
 
 """
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-model = FilterConv(in_channels=1,out_channels=6)
-model.to(device=device)
 
-x = torch.load('data/audio_data_correct_format.pth')
-ic(x.shape)
-ic(x[0].shape)
-x1 = torch.split(x, 32*100, 0)
-ic(len(x1))
-ic(x1[0].shape)
+model = FilterConv(in_channels = IN_CHANNELS, out_channels = OUT_CHANNELS)
+model.to(device = DEVICE)
 
+data = torch.load(DATA_PATH)
+# ic(data.shape, x[0].shape)
+x = torch.split(data, min(BATCH_SIZE*500, data.size(0)), 0)
+
+# ic(len(x1))
+# ic(x1[0].shape)
 
 # Dry run an example on model
 # ic(model(x1[0]).shape)
 
+# Initializing
+awt = DWT1d(filter_model = model)
+ic(awt.h0)
 
-awt = DWT1d(filter_model=model)
-ic(awt.h0)
-awt.fit(X=x1[0],batch_size=32,num_epochs=32)
-ic(awt.h0)
+# Training
+awt.fit(X=x[0],batch_size = BATCH_SIZE, num_epochs = NUM_EPOCHS)
+
+name = f"models/{model.__module__}__BATCH-{BATCH_SIZE}__EPOCH-{NUM_EPOCHS}__DATA-{DATA_NAME}__FILTER-{OUT_CHANNELS}__TIME-{time.time()}.pth"
+# print(name)
+
+torch.save(model, name)

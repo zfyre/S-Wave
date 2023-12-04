@@ -116,14 +116,14 @@ class FilterConv(nn.Module):
         return x
 
 
-net = FilterConv()   # define the network    
-net.to(device=device)
+# net = FilterConv()   # define the network    
+# net.to(device=device)
 
 
-x = torch.rand([1024,1,N_INFEATURES])
-debug(x)
+# x = torch.rand([1024,1,N_INFEATURES])
+# debug(x)
 
-y = net(x)
+# y = net(x)
 
 
 
