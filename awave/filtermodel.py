@@ -44,7 +44,7 @@ N_INCHANNELS = 1 # number of input signal channels
 N_OUTPUT_FILTER_SIZE = 6 # output filter size
 
 
-DEBUG_ON=True
+DEBUG_ON=False
 
 def debug(x):
     if DEBUG_ON:
@@ -73,15 +73,15 @@ class FilterConv(nn.Module):
             nn.Dropout1d(1-.85),
             nn.LeakyReLU(0.1),
 
-            # nn.Conv1d(8, 16,kernel_size=4,stride=2,padding=1,bias=False),
-            # nn.Dropout1d(1-.85),
-            # nn.BatchNorm1d(16),
-            # nn.LeakyReLU(0.1),
+            nn.Conv1d(8, 16,kernel_size=4,stride=2,padding=1,bias=False),
+            nn.Dropout1d(1-.85),
+            nn.BatchNorm1d(16),
+            nn.LeakyReLU(0.1),
 
-            # nn.Conv1d(16, 32,kernel_size=4,stride=2,padding=1,bias=False),
-            # nn.Dropout1d(1-.85),
-            # nn.BatchNorm1d(32),
-            # nn.LeakyReLU(0.1),
+            nn.Conv1d(16, 32,kernel_size=4,stride=2,padding=1,bias=False),
+            nn.Dropout1d(1-.85),
+            nn.BatchNorm1d(32),
+            nn.LeakyReLU(0.1),
 
             # nn.Conv1d(32, 64,kernel_size=4,stride=2,padding=1,bias=False),
             # nn.Dropout1d(1-.85),
@@ -120,7 +120,7 @@ net = FilterConv()   # define the network
 net.to(device=device)
 
 
-x = torch.rand([32,1,N_INFEATURES])
+x = torch.rand([1024,1,N_INFEATURES])
 debug(x)
 
 y = net(x)

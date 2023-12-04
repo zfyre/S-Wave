@@ -110,8 +110,8 @@ class Trainer():
             epoch_loss += iter_loss
             if epoch % self.n_print == 0:
                 print('\rTrain Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
-                    epoch, batch_idx * len(data), len(data_loader.dataset),
-                           100. * batch_idx / len(data_loader), iter_loss), end='')
+                    epoch, (batch_idx+1) * len(data), len(data_loader.dataset),
+                           100. * (batch_idx+1) / len(data_loader), iter_loss), end='')
 
         mean_epoch_loss = epoch_loss / (batch_idx + 1)
         self.w_transform.eval()
@@ -132,7 +132,7 @@ class Trainer():
         self.optimizer.zero_grad()
         
         # transform
-        ic(data.shape)
+        # ic(data.shape)
         data_t = self.w_transform(data)
         
         # reconstruction

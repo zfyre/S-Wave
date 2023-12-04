@@ -14,7 +14,7 @@ class AbstractWT(nn.Module):
             train_loader=None,
             lr: float = 0.001,
             batch_size: int = 32,
-            num_epochs: int = 20,
+            num_epochs: int = 10,
             seed: int = 42,
             target=6,
             lamlSum: float = 1.,

@@ -7,6 +7,7 @@ from awave.utils.misc import init_filter, low_to_high
 
 from icecream import ic
 
+# TODO: Implement the parallelisation methods that is different wavelet-filter for different signals not a single filter for a particular batch.
 
 class DWT1d(AbstractWT):
     '''Class of 1d wavelet transform:
@@ -42,11 +43,11 @@ class DWT1d(AbstractWT):
         # initialize by adding random noise
         h0 = init_filter(h0, init_factor, noise_factor, const_factor)
 
+        # TODO: If no model provided then initialize with db wavelet and then do the normal fwd pass.
         # parameterize as a gradient-tensor
-        self.h0 = nn.Parameter(h0, requires_grad=True)
-        
-
-        # Replacing the Filters with a CNN model
+        # self.h0 = nn.Parameter(h0, requires_grad=True)
+        self.h0 = h0  
+                
         # sefl.h0 = CNN_Models
         self.J = J
         self.mode = mode
@@ -71,16 +72,21 @@ class DWT1d(AbstractWT):
         highs = ()
         x0 = x
 
-        # Solve the need of 2 functions i.e mode_to_int and int_to_mode by making it an enum
+        # TODO: Solve the need of 2 functions i.e mode_to_int and int_to_mode by making it an enum
         mode = lowlevel.mode_to_int(self.mode)
 
-        ic(x.shape)
+        # ic(x.shape, self.h0.shape)
+
+        # Checking if our model is training or not.
+        # print(list(self.filter_model.parameters()))
+
         # Getting the filter from the model:
         if self.filter_model is not None:
-            self.h0 = self.filter_model(x)
+            filt = self.filter_model(x)
+            self.h0 = torch.reshape(torch.mean(filt, 0), [1, 1, filt.size(1)])
             
-        ic(self.h0.shape)
         h1 = low_to_high(self.h0)
+        # ic(self.h0.shape, h1)
 
         # Do a multilevel transform
         for j in range(self.J):
