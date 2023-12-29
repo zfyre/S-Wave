@@ -70,7 +70,9 @@ def afb1d(x, h0, h1, mode='zero', dim=-1):
         h0 = h0.reshape(*shape)
     if h1.shape != tuple(shape):
         h1 = h1.reshape(*shape)
+
     h = torch.cat([h0, h1] * C, dim=0)
+    ic(h0.shape, h1.shape, 'lowlevel', h.shape)
 
     if mode == 'per' or mode == 'periodization':
         if x.shape[dim] % 2 == 1:
@@ -243,6 +245,11 @@ def mypad(x, pad, mode='constant', value=0):
 
 
 # ENUM could have been created for this thing to be handled
+"""
+In the context of PyWavelets, the term "mode" refers to the boundary handling strategy used during wavelet transforms. When performing discrete wavelet transforms (DWT) or other signal processing operations using wavelets, you often encounter the issue of how to handle the edges or boundaries of the signal.
+
+PyWavelets provides several modes for dealing with boundary effects, and you can specify the desired mode when performing wavelet transforms.
+"""
 def mode_to_int(mode):
     if mode == 'zero':
         return 0
@@ -341,15 +348,17 @@ class AFB1D(Function):
     @staticmethod
     def forward(x, h0, h1, mode):
         mode = int_to_mode(mode)
-
+        ic(h0.shape)
         # Make inputs 4d
         x = x[:, :, None, :]
         h0 = h0[:, :, None, :]
         h1 = h1[:, :, None, :]
+        # ic(h0.shape)
 
         lohi = afb1d(x, h0, h1, mode=mode, dim=3)
         x0 = lohi[:, ::2, 0].contiguous()
         x1 = lohi[:, 1::2, 0].contiguous()
+
         return x0, x1
 
 

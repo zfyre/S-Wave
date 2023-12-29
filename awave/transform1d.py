@@ -6,6 +6,7 @@ from awave.transform import AbstractWT
 from awave.utils.misc import init_filter, low_to_high
 
 from icecream import ic
+from visualization import * 
 
 # TODO: Implement the parallelisation methods that is different wavelet-filter for different signals not a single filter for a particular batch.
 
@@ -85,8 +86,11 @@ class DWT1d(AbstractWT):
             filt = self.filter_model(x)
             self.h0 = torch.reshape(torch.mean(filt, 0), [1, 1, filt.size(1)])
             
+        # ic(self.h0)
         h1 = low_to_high(self.h0)
-        # ic(self.h0.shape, h1)
+
+        # plot_filter_banks(torch.reshape(self.h0,[self.h0.size(2)]),torch.reshape(h1,[h1.size(2)]))
+        # ic(self.h0.shape, x.shape)
 
         # Do a multilevel transform
         for j in range(self.J):

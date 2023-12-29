@@ -40,6 +40,7 @@ x = torch.split(data, min(BATCH_SIZE*500, data.size(0)), 0)
 
 # Initializing
 awt = DWT1d(filter_model = model)
+# awt = DWT1d()
 ic(awt.h0)
 
 # Training

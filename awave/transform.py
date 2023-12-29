@@ -16,7 +16,7 @@ class AbstractWT(nn.Module):
             batch_size: int = 32,
             num_epochs: int = 10,
             seed: int = 42,
-            target=6,
+            target=10,
             lamlSum: float = 1.,
             lamhSum: float = 1.,
             lamL2norm: float = 1.,

@@ -4,6 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from torchsummary import summary
 import logging
+from icecream import ic
 handler=logging.basicConfig(level=logging.INFO)
 lgr = logging.getLogger(__name__)
 
@@ -96,7 +97,7 @@ class FilterConv(nn.Module):
             nn.Flatten(),
         )
         self.out = nn.Linear(4096, out_features=out_channels)
-        summary(self)        
+        # summary(self,N_INCHANNELS)        
         
     def forward(self, x):
 
@@ -121,9 +122,10 @@ class FilterConv(nn.Module):
 
 
 # x = torch.rand([1024,1,N_INFEATURES])
-# debug(x)
+# ic(x.shape)
 
 # y = net(x)
+# ic(y.shape)
 
 
 
