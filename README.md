@@ -4,7 +4,7 @@
 - Download the [temporary dataset](https://drive.google.com/file/d/15TvzIC-kLzpb88xCt9dRFSTcPGJGo3F5/view?usp=drive_link) using wget and unzip to the `./data` directory.
 - Use the [visualization.py](./visualization.py) to visualize the produced filters etc..
 
-![Image](materials/plots1.png)
+![Image](material/plots1.png)
 
 ```python
 # Initialization of Filter Prediction Model:
