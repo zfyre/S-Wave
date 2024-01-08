@@ -29,7 +29,7 @@ for id in range(100, 160):
     low = h0
     # plot_filter_banks(low, high)
     plotdiag(low, high, sig, 4100)
-    # break
+    break
 
 
 

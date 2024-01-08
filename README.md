@@ -4,7 +4,7 @@
 - Download the [temporary dataset](https://drive.google.com/file/d/15TvzIC-kLzpb88xCt9dRFSTcPGJGo3F5/view?usp=drive_link) using wget and unzip to the `./data` directory.
 - Use the [visualization.py](./visualization.py) to visualize the produced filters etc..
 
-![Image](materials/plots1.png)
+![Image](material/plots0.png)
 
 ```python
 # Initialization of Filter Prediction Model:
@@ -14,7 +14,7 @@ model.to(device = DEVICE)
 # Initialization of Autoencoder Model:
 data = torch.load(DATA_PATH)
 awt = DWT1d(filter_model = model)
-
+s
 # Training:
 awt.fit(X = data, batch_size = BATCH_SIZE, num_epochs = NUM_EPOCHS)
 
