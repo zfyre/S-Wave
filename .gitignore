@@ -2,4 +2,4 @@ data/
 trim/
 __pycache__
 models/
-*.png
+res/
