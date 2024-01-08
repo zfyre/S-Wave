@@ -1,6 +1,8 @@
 # Learning Sparse Wavelet Representation
 
 Using a External Model to Predict the low-pass filters and minimizing the loss function like an Autoencoder setup.
+![Image](materials/plots0.png)
+
 ```python
 # Initialization of Filter Prediction Model:
 model = FilterConv(in_channels = IN_CHANNELS, out_channels = OUT_CHANNELS)
