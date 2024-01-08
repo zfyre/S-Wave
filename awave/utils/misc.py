@@ -1,7 +1,82 @@
 import numpy as np
 import pywt
 import torch
+import torch.nn as nn
 import torch.nn.functional as F
+import matplotlib.pyplot as plt
+from matplotlib.lines import Line2D
+
+from icecream import ic
+
+def initialize_weights(model):
+    for m in model.modules():
+        if isinstance(m,(nn.Conv1d, nn.BatchNorm1d, nn.Linear)):
+            nn.init.normal_(m.weight.data,0.0,0.02) # play with these parms
+
+# great for tanh or sigmoid-type activations;
+def initialize_weights_xavier(model):
+    for layer in model.modules():
+        if isinstance(layer, (nn.Conv1d, nn.BatchNorm1d, nn.Linear)):
+            nn.init.xavier_uniform_(layer.weight)
+            if layer.bias is not None:
+                nn.init.constant_(layer.bias, 0)
+
+# great for relu-type activations;
+def initialize_weights_he(model):
+    for layer in model.modules():
+        if isinstance(layer, (nn.Conv1d, nn.BatchNorm1d, nn.Linear)):
+            # nn.init.kaiming_uniform_(layer.weight, mode='fan_in', nonlinearity='relu')
+            nn.init.kaiming_uniform_(layer.weight, mode='fan_in', nonlinearity='leaky_relu', a=0.1) # 'a' - negative slope used in leaky-relu
+            if layer.bias is not None:
+                nn.init.constant_(layer.bias, 0)
+
+
+def plot_grad_flow(named_parameters):
+    '''Plots the gradients flowing through different layers in the net during training.
+    Can be used for checking for possible gradient vanishing / exploding problems.
+    
+    Usage: Plug this function in Trainer class after loss.backwards() as 
+    "plot_grad_flow(self.model.named_parameters())" to visualize the gradient flow'''
+
+    ave_grads = []
+    max_grads= []
+    layers = []
+    for n, p in named_parameters:
+        if(p.requires_grad) and ("bias" not in n):
+            layers.append(n)    
+            ave_grads.append(p.grad.abs().mean())
+            max_grads.append(p.grad.abs().max())
+    plt.bar(np.arange(len(max_grads)), max_grads, alpha=0.1, lw=1, color="c")
+    plt.bar(np.arange(len(ave_grads)), ave_grads, alpha=0.1, lw=1, color="b")
+    plt.hlines(0, 0, len(ave_grads)+1, lw=2, color="k" )
+    plt.xticks(range(0,len(ave_grads), 1), layers, rotation="vertical")
+    plt.xlim(left=0, right=len(ave_grads))
+    # plt.ylim(bottom = -0.001, top=0.02) # zoom in on the lower gradient regions
+    plt.xlabel("Layers")
+    plt.ylabel("average gradient")
+    plt.title("Gradient flow")
+    plt.grid(True)
+    plt.legend([Line2D([0], [0], color="c", lw=4),
+                Line2D([0], [0], color="b", lw=4),
+                Line2D([0], [0], color="k", lw=4)], ['max-gradient', 'mean-gradient', 'zero-gradient'])
+    plt.show()
+
+# def plot_grad_flow(named_parameters):
+#     ave_grads = []
+#     layers = []
+#     for n, p in named_parameters:
+#         if(p.requires_grad) and ("bias" not in n):
+#             layers.append(n)
+#             ave_grads.append(p.grad.abs().mean())
+#     plt.plot(ave_grads, alpha=0.3, color="b")
+#     plt.hlines(0, 0, len(ave_grads)+1, linewidth=1, color="k" )
+#     plt.xticks(range(0,len(ave_grads), 1), layers, rotation="vertical")
+#     plt.xlim(xmin=0, xmax=len(ave_grads))
+#     plt.xlabel("Layers")
+#     plt.ylabel("average gradient")
+#     plt.title("Gradient flow")
+#     plt.grid(True)
+#     plt.show()
 
 
 def reflect(x, minx, maxx):
@@ -98,6 +173,66 @@ def low_to_high(x):
     y = torch.flip(x, (0, 2)) * seq
     return y
 
+def low_to_high_parallel(x):
+    """Converts lowpass filter`s to highpass filter`s. Input must be of shape (B, 1,1,n) where n is length of filter via quadrature mirror filters & B is batch size
+    """
+    B, _, _, n = x.size()
+    seq = (-1) ** torch.arange(n, device=x.device)
+    seq = seq.view(1, 1, 1, n).expand(B, 1, 1, n)
+    y = torch.flip(x, (3,)) * seq
+    return y
+
+def conv2d_parallel(input, filters, padding, stride, groups=None):
+
+    B , C, H, W = input.size();
+    _, out_channels, kC, kH, kW = filters.size()
+
+    # Reshape input to (B, C, H*W)
+    input = input.view(B, C, H*W)
+    # Reshape filters to (out_channels, in_channels, kH, kW)
+    filters = filters.view(B * out_channels, kC, kH, kW)
+    # Apply 2D convolution with groups=B
+    pad = tuple(int(x) for x in padding)
+    output = F.conv2d(input, filters, stride=stride, padding=pad, groups=B)
+    # Reshape output to (batch, out_channels, C, H, W)
+    output = output.view(B, out_channels, output.size(1), output.size(2))
+
+    return output
+
+def conv_transpose2d_parallel(input, filters, stride, padding, groups=None):
+    B, C, H, W = input.size()
+    _, out_channels, kC, kH, kW = filters.size()
+
+    # Reshape input to (B, C, H*W)
+    input = input.view(B, C, H * W)
+    # Reshape filters to (in_channels * out_channels, 1, kH, kW)
+    filters = filters.view(B * out_channels, kC, kH, kW)
+    # Apply transposed 2D convolution with groups=in_channels*out_channels
+    pad = tuple(int(x) for x in padding)
+    output = F.conv_transpose2d(input, filters, stride=stride, padding=pad, groups=B)
+    # Reshape output to (batch, out_channels, C, H, W)
+    output = output.view(B, out_channels, output.size(1), output.size(2))
+
+    return output
+    
+def conv1d_parallel(input, filters, padding, stride, groups=None):
+    # v = F.conv1d(h0, h0, stride=2, padding=n)
+    B, C, H, W = input.size()
+    _, out_channels, kC, kW = filters.size()
+
+    # Reshape input to (B, C, H*W)
+    input = input.view(B, H * W)
+    # Reshape filters to (in_channels * out_channels, 1, kH, kW)
+    filters = filters.view(B * out_channels, kC, kW)
+    # Apply transposed 2D convolution with groups=in_channels*out_channels
+    if(type(padding) == tuple):
+        padding = tuple(int(x) for x in padding)
+    # ic(input.shape, filters.shape)
+    output = F.conv1d(input, filters, stride=stride, padding=padding, groups=B)
+    # Reshape output to (batch, out_channels, C, H, W)
+    output = output.view(B, out_channels,1, output.size(1))
+
+    return output
 
 def get_wavefun(w_transform, level=5):
     '''Get wavelet function from wavelet object.

@@ -1,9 +1,10 @@
 from copy import deepcopy
-
+from awave.utils.misc import plot_grad_flow, initialize_weights_he, initialize_weights_xavier, initialize_weights
 import numpy as np
 import torch
 
 from icecream import ic
+
 
 class Trainer():
     """
@@ -28,6 +29,7 @@ class Trainer():
     def __init__(self,
                  w_transform=None,
                  optimizer=None,
+                 lr_scheduler=None,
                  loss_f=None,
                  target=1,
                  device=torch.device("cuda"),
@@ -49,6 +51,7 @@ class Trainer():
 
         self.w_transform = w_transform.to(self.device)
         self.optimizer = optimizer
+        self.lr_scheduler = lr_scheduler
         self.loss_f = loss_f
         self.target = target
         self.n_print = n_print
@@ -65,6 +68,10 @@ class Trainer():
         epochs: int, optional
             Number of epochs to train the model for.
         """
+
+        print("Initializing Model Weights...")
+        initialize_weights(self.w_transform.filter_model)
+
         print("Starting Training Loop...")
         self.train_losses = np.empty(epochs)
         self.test_losses = np.empty(epochs)
@@ -76,6 +83,7 @@ class Trainer():
                     print('\n====> Epoch: {} Average train loss: {:.4f} (Test set loss: {:.4f})'.format(epoch,
                                                                                                         mean_epoch_loss,
                                                                                                         mean_epoch_test_loss))
+
                 self.train_losses[epoch] = mean_epoch_loss
                 self.test_losses[epoch] = mean_epoch_test_loss
 
@@ -132,7 +140,6 @@ class Trainer():
         self.optimizer.zero_grad()
         
         # transform
-        # ic(data.shape)
         data_t = self.w_transform(data)
         
         # reconstruction
@@ -158,9 +165,13 @@ class Trainer():
 
         # backward
         loss.backward()
-        
+
+        # check gradients flow
+        # plot_grad_flow(self.w_transform.named_parameters())
         # update step
         self.optimizer.step()
+        if(self.lr_scheduler):
+            self.lr_scheduler.step()
 
         return loss.item()
 

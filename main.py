@@ -40,13 +40,10 @@ x = torch.split(data, min(BATCH_SIZE*500, data.size(0)), 0)
 
 # Initializing
 awt = DWT1d(filter_model = model)
-# awt = DWT1d()
-ic(awt.h0)
 
 # Training
-awt.fit(X=x[0],batch_size = BATCH_SIZE, num_epochs = NUM_EPOCHS)
-
-name = f"models/{model.__module__}__BATCH-{BATCH_SIZE}__EPOCH-{NUM_EPOCHS}__DATA-{DATA_NAME}__FILTER-{OUT_CHANNELS}__TIME-{time.time()}.pth"
+awt.fit(X=x[0],batch_size = BATCH_SIZE, num_epochs = NUM_EPOCHS, lr= LR)
+name = f"models/{awt.__module__}__BATCH-{BATCH_SIZE}__EPOCH-{NUM_EPOCHS}__DATA-{DATA_NAME}__FILTER-{OUT_CHANNELS}__TIME-{time.time()}.pth"
 # print(name)
 
-torch.save(model, name)
+torch.save(awt, name)

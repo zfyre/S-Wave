@@ -1,8 +1,9 @@
 import numpy as np
 import torch
 import torch.nn.functional as F
+from icecream import ic
 
-from awave.utils.misc import low_to_high
+from awave.utils.misc import low_to_high, conv1d_parallel
 
 
 def get_loss_f(**kwargs_parse):
@@ -98,12 +99,12 @@ class Loss():
         # conjugate mirror filter condition
         self.CMF_loss = 0
         if self.lamCMF > 0:
-            self.CMF_loss += _CMF_loss(w_transform)
+            self.CMF_loss += _CMF_loss_parallel(w_transform) # Change Here
 
         # convolution constraint
         self.conv_loss = 0
         if self.lamConv > 0:
-            self.conv_loss += _conv_loss(w_transform)
+            self.conv_loss += _conv_loss_parallel(w_transform)
 
         # L1 penalty on wavelet coeffs
         self.L1wave_loss = 0
@@ -121,11 +122,13 @@ class Loss():
             self.highfreq_loss += _penalty_high_freq(w_transform)
 
         # total loss
-        loss = self.rec_loss + self.lamlSum * self.lsum_loss + self.lamhSum * self.hsum_loss + self.lamL2norm * self.L2norm_loss \
-                + self.lamCMF * self.CMF_loss + self.lamConv * self.conv_loss + self.lamL1wave * self.L1wave_loss \
-                + self.lamHighfreq * self.highfreq_loss\
-                # + self.lamL1attr * self.L1attr_loss \
+        loss = self.rec_loss
 
+        # loss = self.rec_loss + self.lamlSum * self.lsum_loss + self.lamhSum * self.hsum_loss + self.lamL2norm * self.L2norm_loss \
+        #         + self.lamCMF * self.CMF_loss + self.lamConv * self.conv_loss + self.lamL1wave * self.L1wave_loss \
+                # + self.lamHighfreq * self.highfreq_loss\
+                # + self.lamL1attr * self.L1attr_loss \
+        # ic(loss)
         return loss
 
 
@@ -160,7 +163,8 @@ def _lsum_loss(w_transform):
     Calculate sum of lowpass filter
     """
     h0 = w_transform.h0
-    loss = .5 * (h0.sum() - np.sqrt(2)) ** 2
+    B = h0.shape[0]
+    loss = .5/B * (h0.sum() - np.sqrt(2)) ** 2
 
     return loss
 
@@ -171,7 +175,8 @@ def _hsum_loss(w_transform):
     """
     h0 = w_transform.h0
     h1 = low_to_high(h0)
-    loss = .5 * h1.sum() ** 2
+    B = h0.shape[0]
+    loss = .5/B * h1.sum() ** 2
 
     return loss
 
@@ -181,7 +186,8 @@ def _L2norm_loss(w_transform):
     Calculate L2 norm of lowpass filter
     """
     h0 = w_transform.h0
-    loss = .5 * ((h0 ** 2).sum() - 1) ** 2
+    B = h0.shape[0]
+    loss = .5/B * ((h0 ** 2).sum() - 1) ** 2
 
     return loss
 
@@ -200,6 +206,23 @@ def _CMF_loss(w_transform):
 
     return loss
 
+def _CMF_loss_parallel(w_transform):
+    """
+    Calculate conjugate mirror filter condition
+    """
+    h0 = w_transform.h0
+    B, _, _, n = h0.size()
+    assert n % 2 == 0, "length of lowpass filter should be even"
+    h_f = torch.fft.fft(h0)
+    # ic(h_f.shape)
+    mod = abs(h_f) ** 2
+    # ic(mod.shape)
+    cmf_identity = mod[:, 0, 0, :n // 2] + mod[:, 0, 0, n // 2:]
+    # ic(cmf_identity.shape)
+    loss = .5/B * torch.sum((cmf_identity - 2) ** 2)
+
+    return loss
+
 
 def _conv_loss(w_transform):
     """
@@ -212,6 +235,29 @@ def _conv_loss(w_transform):
     e = torch.zeros_like(v)
     e[0, 0, n // 2] = 1
     loss = .5 * torch.sum((v - e) ** 2)
+
+    return loss
+
+def _conv_loss_parallel(w_transform):
+    """
+    Calculate convolution of lowpass filter
+    """
+    h0 = w_transform.h0
+    B, _, _, n = h0.size()
+    # h0 = w_transform.h0[0]
+    assert n % 2 == 0, "length of lowpass filter should be even"
+    v = conv1d_parallel(h0, h0, n, 2)
+    # v1 = F.conv1d(h0[0], h0[0], stride=2, padding=n)
+    # ic(v.shape, v1.shape)
+
+    # max_abs_diff = torch.max(torch.abs(v[0] - v1))
+
+    # Print the maximum absolute difference
+    # print("\nMaximum Absolute Difference:", max_abs_diff.item())
+    # assert torch.allclose(v[0], v1, atol=1e-6)
+    e = torch.zeros_like(v)
+    e[:, 0, 0, n // 2] = 1
+    loss = .5/B * torch.sum((v - e) ** 2)
 
     return loss
 
@@ -248,7 +294,8 @@ def _penalty_high_freq(w_transform):
     left = int(np.floor(n / 4) + 1)
     right = int(np.ceil(3 * n / 4) - 1)
     h0_hf = mod[0, 0, left:right + 1]
-    loss = 0.5 * torch.norm(h0_hf) ** 2
+    B = w_transform.h0.shape[0]
+    loss = 0.5/B * torch.norm(h0_hf) ** 2
 
     return loss
 

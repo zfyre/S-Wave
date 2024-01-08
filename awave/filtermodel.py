@@ -41,7 +41,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 # Dimensions
 
 N_INFEATURES = 1024 # Signal Length
-N_INCHANNELS = 1 # number of input signal channels
+N_INCHANNELS = 3 # number of input signal channels
 N_OUTPUT_FILTER_SIZE = 6 # output filter size
 
 
@@ -84,10 +84,10 @@ class FilterConv(nn.Module):
             nn.BatchNorm1d(32),
             nn.LeakyReLU(0.1),
 
-            # nn.Conv1d(32, 64,kernel_size=4,stride=2,padding=1,bias=False),
-            # nn.Dropout1d(1-.85),
-            # nn.BatchNorm1d(64),
-            # nn.LeakyReLU(0.1),
+            nn.Conv1d(32, 64,kernel_size=4,stride=2,padding=1,bias=False),
+            nn.Dropout1d(1-.85),
+            nn.BatchNorm1d(64),
+            nn.LeakyReLU(0.1),
 
             # nn.Conv1d(64, 128,kernel_size=4,stride=2,padding=1,bias=False),
             # nn.Dropout1d(1-.85),
@@ -117,11 +117,12 @@ class FilterConv(nn.Module):
         return x
 
 
+
 # net = FilterConv()   # define the network    
 # net.to(device=device)
 
 
-# x = torch.rand([1024,1,N_INFEATURES])
+# x = torch.rand([1024,3,N_INFEATURES])
 # ic(x.shape)
 
 # y = net(x)

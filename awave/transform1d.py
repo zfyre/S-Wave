@@ -3,12 +3,11 @@ import torch.nn as nn
 
 from awave.utils import lowlevel
 from awave.transform import AbstractWT
-from awave.utils.misc import init_filter, low_to_high
+from awave.utils.misc import init_filter, low_to_high, low_to_high_parallel
 
 from icecream import ic
 from visualization import * 
 
-# TODO: Implement the parallelisation methods that is different wavelet-filter for different signals not a single filter for a particular batch.
 
 class DWT1d(AbstractWT):
     '''Class of 1d wavelet transform:
@@ -67,7 +66,7 @@ class DWT1d(AbstractWT):
                 yh is a list of length J with the first entry
                 being the finest scale coefficients.
         """
-        print("In Forward")
+        # print("In Forward")
         assert x.ndim == 3, "Can only handle 3d inputs (N, in_C, in_L)"
 
         highs = ()
@@ -76,27 +75,25 @@ class DWT1d(AbstractWT):
         # TODO: Solve the need of 2 functions i.e mode_to_int and int_to_mode by making it an enum -------------------------
         mode = lowlevel.mode_to_int(self.mode)
 
-        # ic(x.shape, self.h0.shape)
-
         # Checking if our model is training or not.
         # print(list(self.filter_model.parameters()))
 
         # Getting the filter from the model:
         if self.filter_model is not None:
-            filt = self.filter_model(x)
-            self.h0 = torch.reshape(torch.mean(filt, 0), [1, 1, filt.size(1)])
+            low_pass = self.filter_model(x)
+            # self.h0 = torch.reshape(torch.mean(low_pass, 0), [1, 1, low_pass.size(1)])
+            self.h0 = torch.reshape(low_pass, [low_pass.size(0), 1, 1, low_pass.size(1)])
             
-        # ic(self.h0)
-        h1 = low_to_high(self.h0)  # TODO : make it work for matrix type of h0 ---------------------------------------------
+        # ic(self.h0.shape)
+        # h1 = low_to_high(self.h0)  
+        h1 = low_to_high_parallel(self.h0) ## CHECK IF IT's CORRECT OR NOT CAUSE RN IT'S CHAT-GPT --------------------------
 
-        # plot_filter_banks(torch.reshape(self.h0,[self.h0.size(2)]),torch.reshape(h1,[h1.size(2)]))
-
-        ic(self.h0.shape, x.shape)
+        # ic(self.h0.shape, x.shape, h1.shape)
 
         # Do a multilevel transform
         for j in range(self.J):
             x0, x1 = lowlevel.AFB1D.forward(x0, self.h0, h1, mode)
-            ic(x1.shape)
+            # ic(x1.shape)
             highs += (x1,)
 
         return (x0,) + highs
@@ -122,7 +119,9 @@ class DWT1d(AbstractWT):
         assert x0.ndim == 3, "Can only handle 3d inputs (N, C, L)"
         mode = lowlevel.mode_to_int(self.mode)
 
-        h1 = low_to_high(self.h0)
+        # h1 = low_to_high(self.h0)
+        h1 = low_to_high_parallel(self.h0)
+        # ic(self.h0.shape, h1.shape, x0.shape)
         # Do a multilevel inverse transform
         for x1 in highs[::-1]:
             if x1 is None:
