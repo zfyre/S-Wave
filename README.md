@@ -1,6 +1,8 @@
 # Learning Sparse Wavelet Representation
 
-Using a External Model to Predict the low-pass filters and minimizing the loss function like an Autoencoder setup.
+- Using a External Model to Predict the low-pass filters and minimizing the loss function like an Autoencoder setup.
+- Download the [temporary dataset](https://drive.google.com/file/d/15TvzIC-kLzpb88xCt9dRFSTcPGJGo3F5/view?usp=drive_link) using wget and unzip to the `./data` directory.
+- Use the [visualization.py](./visualization.py) to visualize the produced filters etc..
 ```python
 # Initialization of Filter Prediction Model:
 model = FilterConv(in_channels = IN_CHANNELS, out_channels = OUT_CHANNELS)
@@ -13,12 +15,11 @@ awt = DWT1d(filter_model = model)
 # Training:
 awt.fit(X = data, batch_size = BATCH_SIZE, num_epochs = NUM_EPOCHS)
 
-name = f"models/{model.__module__}__BATCH-{BATCH_SIZE}__EPOCH-{NUM_EPOCHS}__DATA-{DATA_NAME}__FILTER-{OUT_CHANNELS}__TIME-{time.time()}.pth"
-torch.save(model, name)
+name = f"{name_of_your_model}.pth"
+torch.save(awt, name)
 ```
-```
-currently implemented for 1D, using [transform1d.py](awave/transform1d.py)
-```
+currently implemented for 1D, using [transform1d.py](./awave/transform1d.py)
+
 ---
 ## OPEN FOR CONTRIBUTIONS AND MORE IDEAS!!
 ---
