@@ -1,12 +1,18 @@
 import torch
+import numpy as np
 from awave.filtermodel import FilterConv
 from visualization import *
 from config import *
 from icecream import ic
 
+
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 awt = torch.load("models/awave.transform1d__BATCH-32__EPOCH-256__DATA-LR=1e-3__Reconstruction-Loss-Only__FILTER-6__TIME-1704721743.731563.pth")
 model = awt.filter_model
-model.to(DEVICE)
+model.to(device=device)
+
+# print(awt.train_losses)
+# plot_loss(awt.train_losses)
 
 data = torch.load(DATA_PATH)
 x = torch.split(data, min(BATCH_SIZE*5, data.size(0)), 0)
@@ -25,11 +31,22 @@ for id in range(100, 160):
     sig = x[0][id]
     # plot_waveform(sig,4100)
     # ic(filter)
-    high = torch.reshape(low_to_high(torch.reshape(h0, [1, 1, h0.size(0)])),[h0.size(0)])
-    low = h0
+    high = torch.reshape(low_to_high(torch.reshape(h0, [1, 1, h0.size(0)])),[h0.size(0)]).detach().numpy()
+    low = h0.detach().numpy()
+
+    phi = np.convolve(low, low)
+    psi = np.convolve(high, low)
+
+    # Plot the scaling and wavelet functions
+    plt.plot(phi, label='Scaling Function (phi)')
+    plt.plot(psi, label='Wavelet Function (psi)')
+    plt.legend()
+    plt.show()
+
     # plot_filter_banks(low, high)
-    plotdiag(low, high, sig, 4100)
+    # plotdiag(low, high, sig, 4100)
     break
+
 
 
 

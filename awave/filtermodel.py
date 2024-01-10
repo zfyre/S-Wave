@@ -89,14 +89,20 @@ class FilterConv(nn.Module):
             nn.BatchNorm1d(64),
             nn.LeakyReLU(0.1),
 
-            # nn.Conv1d(64, 128,kernel_size=4,stride=2,padding=1,bias=False),
-            # nn.Dropout1d(1-.85),
-            # nn.BatchNorm1d(128),
-            # nn.LeakyReLU(0.1),
+            nn.Conv1d(64, 128,kernel_size=4,stride=2,padding=1,bias=False),
+            nn.Dropout1d(1-.85),
+            nn.BatchNorm1d(128),
+            nn.LeakyReLU(0.1),
 
             nn.Flatten(),
         )
-        self.out = nn.Linear(4096, out_features=out_channels)
+        self.out = nn.Sequential(
+            nn.Linear(4096, 2048),
+            nn.Linear(2048, 1024),
+            nn.Linear(1024, 512),
+            nn.Linear(512, 256),
+            nn.Linear(256, out_channels),
+        )
         # summary(self,N_INCHANNELS)        
         
     def forward(self, x):

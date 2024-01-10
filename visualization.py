@@ -111,3 +111,22 @@ def plot_specgram(waveform, sample_rate, title="Spectrogram"):
             axes[c].set_ylabel(f"Channel {c+1}")
     figure.suptitle(title)
     plt.show(block=False)
+
+def plot_loss(train_losses : list):
+
+    epochs = range(1, len(train_losses) + 1)
+
+    # Plotting losses on a logarithmic scale
+    plt.semilogy(epochs, train_losses, label='Loss', marker='x',color='black', base = 10, linestyle = '-')
+
+    # Adding title and labels
+    plt.title('Model Loss Over Epochs')
+    plt.xlabel('Epochs')
+    plt.ylabel('Logarithmic Loss')
+
+    # Adding legend
+    plt.legend()
+
+    # Displaying the plot
+    plt.show()
+
