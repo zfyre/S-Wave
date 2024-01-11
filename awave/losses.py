@@ -122,17 +122,15 @@ class Loss():
             self.highfreq_loss += _penalty_high_freq(w_transform)
 
         # total loss
-        loss = self.rec_loss
-
-        # loss = self.rec_loss + self.lamlSum * self.lsum_loss + self.lamhSum * self.hsum_loss + self.lamL2norm * self.L2norm_loss \
-        #         + self.lamCMF * self.CMF_loss + self.lamConv * self.conv_loss + self.lamL1wave * self.L1wave_loss \
-                # + self.lamHighfreq * self.highfreq_loss\
+        loss = self.rec_loss + self.lamlSum * self.lsum_loss + self.lamhSum * self.hsum_loss + self.lamL2norm * self.L2norm_loss \
+                + self.lamCMF * self.CMF_loss + self.lamConv * self.conv_loss + self.lamL1wave * self.L1wave_loss \
+                + self.lamHighfreq * self.highfreq_loss\
                 # + self.lamL1attr * self.L1attr_loss \
         # ic(loss)
         return loss
 
 
-def _reconstruction_loss(data, recon_data):
+def _reconstruction_loss(data, recon_data): # DONE!!
     """
     Calculates the per image reconstruction loss for a batch of data. I.e. negative
     log likelihood.
@@ -158,37 +156,40 @@ def _reconstruction_loss(data, recon_data):
     return loss
 
 
-def _lsum_loss(w_transform):
+def _lsum_loss(w_transform): # DONE!!
     """
     Calculate sum of lowpass filter
     """
     h0 = w_transform.h0
     B = h0.shape[0]
-    loss = .5/B * (h0.sum() - np.sqrt(2)) ** 2
+    loss = .5 * (h0.sum(dim=(1,2,3)) - np.sqrt(2)) ** 2
 
+    loss = loss.sum() / B
     return loss
 
 
-def _hsum_loss(w_transform):
+def _hsum_loss(w_transform): # DONE!!
     """
     Calculate sum of highpass filter
     """
     h0 = w_transform.h0
     h1 = low_to_high(h0)
     B = h0.shape[0]
-    loss = .5/B * h1.sum() ** 2
+    loss = .5 * h1.sum(dim=(1,2,3)) ** 2
 
+    loss = loss.sum() / B
     return loss
 
 
-def _L2norm_loss(w_transform):
+def _L2norm_loss(w_transform): # DONE!!
     """
     Calculate L2 norm of lowpass filter
     """
     h0 = w_transform.h0
     B = h0.shape[0]
-    loss = .5/B * ((h0 ** 2).sum() - 1) ** 2
+    loss = .5 * ((h0 ** 2).sum(dim=(1,2,3)) - 1) ** 2
 
+    loss = loss.sum() / B
     return loss
 
 
@@ -206,7 +207,7 @@ def _CMF_loss(w_transform):
 
     return loss
 
-def _CMF_loss_parallel(w_transform):
+def _CMF_loss_parallel(w_transform): # DONE!!
     """
     Calculate conjugate mirror filter condition
     """
@@ -219,8 +220,10 @@ def _CMF_loss_parallel(w_transform):
     # ic(mod.shape)
     cmf_identity = mod[:, 0, 0, :n // 2] + mod[:, 0, 0, n // 2:]
     # ic(cmf_identity.shape)
-    loss = .5/B * torch.sum((cmf_identity - 2) ** 2)
+    z = (cmf_identity - 2) ** 2
+    loss = .5 * z.sum(dim=(1))
 
+    loss = loss.sum() / B
     return loss
 
 
@@ -238,7 +241,7 @@ def _conv_loss(w_transform):
 
     return loss
 
-def _conv_loss_parallel(w_transform):
+def _conv_loss_parallel(w_transform): # DONE!!
     """
     Calculate convolution of lowpass filter
     """
@@ -257,8 +260,10 @@ def _conv_loss_parallel(w_transform):
     # assert torch.allclose(v[0], v1, atol=1e-6)
     e = torch.zeros_like(v)
     e[:, 0, 0, n // 2] = 1
-    loss = .5/B * torch.sum((v - e) ** 2)
+    z = (v - e) ** 2
+    loss = .5 * z.sum(dim=(1,2,3))
 
+    loss = loss.sum() / B
     return loss
 
 
@@ -286,7 +291,7 @@ def _L1_wave_loss(coeffs):
 #     return loss
 
 
-def _penalty_high_freq(w_transform):
+def _penalty_high_freq(w_transform): #TODO
     # pen high frequency of h0
     n = w_transform.h0.size(2)
     h_f = torch.fft(torch.stack((w_transform.h0, torch.zeros_like(w_transform.h0)), dim=3), 1)
@@ -294,6 +299,7 @@ def _penalty_high_freq(w_transform):
     left = int(np.floor(n / 4) + 1)
     right = int(np.ceil(3 * n / 4) - 1)
     h0_hf = mod[0, 0, left:right + 1]
+    print(h0_hf.shape)
     B = w_transform.h0.shape[0]
     loss = 0.5/B * torch.norm(h0_hf) ** 2
 

@@ -1,9 +1,10 @@
-import matplotlib.pyplot as plt
 import pywt
-from awave.utils.misc import low_to_high
 import torch
-from icecream import ic
+import numpy as np
+import matplotlib.pyplot as plt
+from awave.utils.misc import low_to_high
 
+from icecream import ic
 countfb = 0
 countsg = 0
 
@@ -95,6 +96,39 @@ def plotdiag(low, high, waveform, sample_rate):
     plt.savefig(f'res/plots{countsg}.png')
     countsg +=1
 
+def plot_wavelet(low, high, waveform, sample_rate):
+
+    fig, ax = plt.subplots(2,1,figsize=(10,5))
+
+    low = low.detach().numpy()
+    high = high.detach().numpy()
+
+    phi = np.convolve(low, low)
+    psi = np.convolve(high, low)
+
+    # Plot the scaling and wavelet functions
+    ax[0].plot(phi, label='Scaling Function (phi)')
+    ax[0].plot(psi, label='Wavelet Function (psi)')
+
+    #-----------------------------------------------------
+
+    # Plot the waveform covering the whole bottom row
+    waveform = waveform.numpy()
+    num_channels, num_frames = waveform.shape
+    time_axis = torch.arange(0, num_frames) / sample_rate
+
+    # Create a single subplot for the waveform
+    for c in range(num_channels):
+        ax[1].plot(time_axis, waveform[c], linewidth=1)
+        ax[1].grid(True)
+        if num_channels > 1:
+            ax[1].set_ylabel(f"Channel {c+1}")
+    ax[1].set_xlabel('Time (s)')
+
+    plt.legend()
+    plt.show(block=False)
+    plt.pause(4)
+    plt.close()
 
 def plot_specgram(waveform, sample_rate, title="Spectrogram"):
     waveform = waveform.numpy()

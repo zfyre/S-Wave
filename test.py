@@ -7,7 +7,7 @@ from icecream import ic
 
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-awt = torch.load("models/awave.transform1d__BATCH-32__EPOCH-256__DATA-LR=1e-3__Reconstruction-Loss-Only__FILTER-6__TIME-1704721743.731563.pth")
+awt = torch.load("models/wavelet-colab-256-lr=1e-4.pth", map_location='cpu')
 model = awt.filter_model
 model.to(device=device)
 
@@ -17,39 +17,40 @@ model.to(device=device)
 data = torch.load(DATA_PATH)
 x = torch.split(data, min(BATCH_SIZE*5, data.size(0)), 0)
 
-ic(data.shape, x[0].shape)
+ic(data.shape, x[3].shape)
 
 ic(model)
 
-y = model(x[0])
+y = model(x[3])
 
-ic(len(x[0]))
+ic(len(x[3]))
 print("Out shape:", y.shape)
 
-for id in range(100, 160):
+for id in range(100, 120):
+    plt.close()
     h0 = y[id]
     sig = x[0][id]
     # plot_waveform(sig,4100)
     # ic(filter)
-    high = torch.reshape(low_to_high(torch.reshape(h0, [1, 1, h0.size(0)])),[h0.size(0)]).detach().numpy()
-    low = h0.detach().numpy()
+    high = torch.reshape(low_to_high(torch.reshape(h0, [1, 1, h0.size(0)])),[h0.size(0)])
+    low = h0
 
-    phi = np.convolve(low, low)
-    psi = np.convolve(high, low)
-
-    # Plot the scaling and wavelet functions
-    plt.plot(phi, label='Scaling Function (phi)')
-    plt.plot(psi, label='Wavelet Function (psi)')
-    plt.legend()
-    plt.show()
+    plot_wavelet(low, high, sig, 4100)
 
     # plot_filter_banks(low, high)
     # plotdiag(low, high, sig, 4100)
-    break
+    # break
 
 
 
+# t = torch.ones([4,1,3])
+# print(t)
+# print(t.sum((1,2)))
 
+# s = 0.5*(t.sum((1,2)) - 1)**2
+# print(s)
+# r = s.sum()
+# print(r)
 
 # Correct Code Form forward paralleliztion!!
 """ 

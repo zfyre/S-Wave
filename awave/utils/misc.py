@@ -11,7 +11,7 @@ from icecream import ic
 def initialize_weights(model):
     for m in model.modules():
         if isinstance(m,(nn.Conv1d, nn.BatchNorm1d, nn.Linear)):
-            nn.init.normal_(m.weight.data,0.0,0.02) # play with these parms
+            nn.init.normal_(m.weight.data,0.0,0.01) # play with these parms
 
 # great for tanh or sigmoid-type activations;
 def initialize_weights_xavier(model):
