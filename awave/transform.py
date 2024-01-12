@@ -90,8 +90,7 @@ class AbstractWT(nn.Module):
         params = nn.ParameterList(self.parameters())
         optimizer = torch.optim.Adam(params, lr=lr)
 
-        # lambda1 = lambda epoch: 0.65 ** epoch
-        # scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda=lambda1)
+        scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.9)
 
         # Get the Loss imported from the get_loss_f function.
         loss_f = get_loss_f(lamlSum=lamlSum, lamhSum=lamhSum,
@@ -102,7 +101,7 @@ class AbstractWT(nn.Module):
         trainer = Trainer(
                           w_transform = self,
                           optimizer=optimizer,
-                          lr_scheduler = None,
+                          lr_scheduler = scheduler,
                           loss_f=loss_f,
                           use_residuals=True,
                           target=target,

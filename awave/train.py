@@ -122,6 +122,7 @@ class Trainer():
                            100. * (batch_idx+1) / len(data_loader), iter_loss), end='')
 
         mean_epoch_loss = epoch_loss / (batch_idx + 1)
+        self.lr_scheduler.step()
         self.w_transform.eval()
         return mean_epoch_loss
 
@@ -170,8 +171,6 @@ class Trainer():
         # plot_grad_flow(self.w_transform.named_parameters())
         # update step
         self.optimizer.step()
-        if(self.lr_scheduler):
-            self.lr_scheduler.step()
 
         return loss.item()
 
