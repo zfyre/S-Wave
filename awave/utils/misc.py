@@ -199,21 +199,27 @@ def conv2d_parallel(input, filters, padding, stride, groups=None):
 
     return output
 
-def conv_transpose2d_parallel(input, filters, stride, padding, groups=None):
-    B, C, H, W = input.size()
-    _, out_channels, kC, kH, kW = filters.size()
+def conv_transpose2d_parallel(lo, hi, g0, g1, pad, s, C=None):
+    batch_size = g0.shape[0]
+    # Assuming lo, hi, g0, g1 are all tensors of shape (batch_size, channels, height, width)
+    # s is the stride, pad is the padding, C is the number of groups
 
-    # Reshape input to (B, C, H*W)
-    input = input.view(B, C, H * W)
-    # Reshape filters to (in_channels * out_channels, 1, kH, kW)
-    filters = filters.view(B * out_channels, kC, kH, kW)
-    # Apply transposed 2D convolution with groups=in_channels*out_channels
-    pad = tuple(int(x) for x in padding)
-    output = F.conv_transpose2d(input, filters, stride=stride, padding=pad, groups=B)
-    # Reshape output to (batch, out_channels, C, H, W)
-    output = output.view(B, out_channels, output.size(1), output.size(2))
+    # Reshape lo and hi to (batch_size * channels, 1, height, width)
+    lo_reshaped = lo.view(-1, 1, lo.shape[2], lo.shape[3])
+    hi_reshaped = hi.view(-1, 1, hi.shape[2], hi.shape[3])
 
-    return output
+    # Stack g0 and g1 along a new dimension to match the batch dimension of lo and hi
+    g0_with_batch = g0.unsqueeze(0)  # Add batch dimension
+    g1_with_batch = g1.unsqueeze(0)  # Add batch dimension
+
+    # Perform the transposed convolution using conv_transpose2d
+    y = F.conv_transpose2d(lo, g0_with_batch, stride=s, padding=pad, groups=C) + \
+        F.conv_transpose2d(hi, g1_with_batch, stride=s, padding=pad, groups=C)
+
+    # Reshape y back to its original shape (batch_size, channels, height, width)
+    y = y.view(batch_size, -1, y.shape[2], y.shape[3])
+
+    return y
     
 def conv1d_parallel(input, filters, padding, stride, groups=None):
     # v = F.conv1d(h0, h0, stride=2, padding=n)

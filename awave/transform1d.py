@@ -87,6 +87,7 @@ class DWT1d(AbstractWT):
         h1 = low_to_high_parallel(self.h0) ## CHECK IF IT's CORRECT OR NOT CAUSE RN IT'S CHAT-GPT --------------------------
 
         # ic(self.h0.shape, x.shape, h1.shape)
+        # ic(self.h0.shape)
 
         # Do a multilevel transform
         for j in range(self.J):
@@ -126,6 +127,7 @@ class DWT1d(AbstractWT):
         for x1 in highs[::-1]:
             if x1 is None:
                 x1 = torch.zeros_like(x0)
+
 
             # 'Unpad' added signal
             if x0.shape[-1] > x1.shape[-1]:

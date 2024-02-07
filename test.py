@@ -1,45 +1,69 @@
 import torch
-import numpy as np
-from awave.filtermodel import FilterConv
-from visualization import *
-from config import *
-from icecream import ic
+
+h0 = torch.rand([32, 1, 1, 8])
+h1 = torch.rand([32, 1, 1, 8])
+
+g0_col = h0.reshape((h0.size(0), 1, -1, 1))
+g1_col = h1.reshape((h1.size(0), 1, -1, 1))
+g0_row = h0.reshape((h0.size(0), 1, 1, -1))
+g1_row = h1.reshape((h1.size(0), 1, 1, -1))
+
+print(g0_col.shape)
+print(g1_col.shape)
+print(g0_row.shape)
+print(g1_row.shape)
+
+print(h0.numel())
+
+x = torch.rand([3,3,6,24732])
+# lh, hl, hh = torch.unbind(x, dim=2)
 
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-awt = torch.load("models/wavelet-colab-256-lr=1e-4.pth", map_location='cpu')
-model = awt.filter_model
-model.to(device=device)
 
-# print(awt.train_losses)
-# plot_loss(awt.train_losses)
 
-data = torch.load(DATA_PATH)
-x = torch.split(data, min(BATCH_SIZE*5, data.size(0)), 0)
 
-ic(data.shape, x[3].shape)
+# import torch
+# import numpy as np
+# from awave.filtermodel import FilterConv
+# from visualization import *
+# from config import *
+# from icecream import ic
 
-ic(model)
 
-y = model(x[3])
+# device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+# awt = torch.load("models/wavelet-colab-256-lr=1e-4.pth", map_location='cpu')
+# model = awt.filter_model
+# model.to(device=device)
 
-ic(len(x[3]))
-print("Out shape:", y.shape)
+# # print(awt.train_losses)
+# # plot_loss(awt.train_losses)
 
-for id in range(100, 120):
-    plt.close()
-    h0 = y[id]
-    sig = x[3   ][id]
-    # plot_waveform(sig,4100)
-    # ic(filter)
-    high = torch.reshape(low_to_high(torch.reshape(h0, [1, 1, h0.size(0)])),[h0.size(0)])
-    low = h0
+# data = torch.load(DATA_PATH)
+# x = torch.split(data, min(BATCH_SIZE*5, data.size(0)), 0)
 
-    plot_wavelet(low, high, sig, 4100)
+# ic(data.shape, x[3].shape)
 
-    # plot_filter_banks(low, high)
-    # plotdiag(low, high, sig, 4100)
-    # break
+# ic(model)
+
+# y = model(x[3])
+
+# ic(len(x[3]))
+# print("Out shape:", y.shape)
+
+# for id in range(100, 120):
+#     plt.close()
+#     h0 = y[id]
+#     sig = x[3   ][id]
+#     # plot_waveform(sig,4100)
+#     # ic(filter)
+#     high = torch.reshape(low_to_high(torch.reshape(h0, [1, 1, h0.size(0)])),[h0.size(0)])
+#     low = h0
+
+#     plot_wavelet(low, high, sig, 4100)
+
+#     # plot_filter_banks(low, high)
+#     # plotdiag(low, high, sig, 4100)
+#     # break
 
 
 

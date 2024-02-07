@@ -25,7 +25,7 @@ def train1d(data, filter_model, device):
 def train2d(data, filter_model, device):
     
     # Initializing
-    awt = DWT2d(filter_model = filter_model, device=device).to(device=device)
+    awt = DWT2d(filter_model = filter_model, J=3, device=device).to(device=device)
 
     # Training
     awt.fit(X=data,batch_size = BATCH_SIZE, num_epochs = NUM_EPOCHS, lr= LR)
@@ -41,19 +41,20 @@ if __name__ == "__main__":
 
     """Provide the filter prediction model. 
     """
-    # model = FilterConv(in_channels = IN_CHANNELS, out_channels = OUT_CHANNELS).to(device)
-    model = models.resnet18(pretrained=False)
-    num_ftrs = model.fc.in_features
-    model.fc = nn.Sequential(
-        nn.Dropout(0.5),
-        nn.Linear(num_ftrs, OUT_CHANNELS)
-    )
+    model = FilterConv(in_channels = IN_CHANNELS, out_channels = OUT_CHANNELS).to(device)
+    # model = models.resnet18(pretrained=False)
+    # num_ftrs = model.fc.in_features
+    # model.fc = nn.Sequential(
+    #     nn.Dropout(0.2),
+    #     nn.Linear(num_ftrs, OUT_CHANNELS)
+    # )
     
     """Load the data. 
     """
     data = torch.load(DATA_PATH).to(device)
-    # ic(data.shape, x[0].shape)
+    # # # ic(data.shape, x[0].shape)
     x = torch.split(data, min(BATCH_SIZE*500, data.size(0)), 0)
+    # data = torch.rand([1000, 3, 32, 32])
     # ic(len(x1))
     # ic(x1[0].shape)
     # Dry run an example on model
@@ -61,4 +62,5 @@ if __name__ == "__main__":
 
     """Train the model. 
     """
-    train2d(x[0], model, device)
+    # train2d(data, model, device)
+    train1d(x[0], model, device)

@@ -69,10 +69,10 @@ class AbstractWT(nn.Module):
 
             # convert to float
             X = X.float()
-
-            # Handling the input for 2D wavelet Transform.
-            if self.wt_type == 'DWT2d':
-                X = X.unsqueeze(1)
+            # ic(X.shape)
+            # TODO: Handling the input for 2D wavelet Transform.
+            # if self.wt_type == 'DWT2d':
+            #     X = X.unsqueeze(1)
 
             # need to pad as if it had y (to match default pytorch dataloaders)
             X = [(X[i], np.nan) for i in range(X.shape[0])]

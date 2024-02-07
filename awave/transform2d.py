@@ -36,9 +36,10 @@ class DWT2d(AbstractWT):
 
         # initialize
         h0 = init_filter(h0, init_factor, noise_factor, const_factor)
+        # ic(h0.shape)
         # parameterize
-        self.h0 = nn.Parameter(h0, requires_grad=True)
-        self.h0 = self.h0.to(device)
+        # self.h0 = nn.Parameter(h0, requires_grad=True)
+        # self.h0 = self.h0.to(device)
 
         self.J = J
         self.mode = mode
@@ -67,19 +68,24 @@ class DWT2d(AbstractWT):
         yh = ()
         ll = x
         mode = lowlevel.mode_to_int(self.mode)
-
+        # ic(x.shape)
         if self.filter_model is not None:
             low_pass = self.filter_model(x)
+            # ic(low_pass.shape)
             self.h0 = torch.reshape(low_pass, [low_pass.size(0), 1, 1, low_pass.size(1)])
 
         # TODO: check if `low_to_high_parallel` is correctly implemented or not cause, right now it's chat-gpt
         h1 = low_to_high_parallel(self.h0) 
         # h1 = low_to_high(self.h0)
+        # ic(h1.shape)
+        # ic(self.h0.shape)
 
-        h0_col = self.h0.reshape((1, 1, -1, 1))
-        h1_col = h1.reshape((1, 1, -1, 1))
-        h0_row = self.h0.reshape((1, 1, 1, -1))
-        h1_row = h1.reshape((1, 1, 1, -1))
+        batch = self.h0.size(0)
+        
+        h0_col = self.h0.reshape((batch, 1, 1, -1, 1))
+        h1_col = h1.reshape((batch, 1, 1, -1, 1))
+        h0_row = self.h0.reshape((batch, 1,  1, 1, -1))
+        h1_row = h1.reshape((batch, 1, 1, 1, -1))
 
         # Do a multilevel transform
         for j in range(self.J):
@@ -120,24 +126,34 @@ class DWT2d(AbstractWT):
         # h1 = low_to_high(self.h0)
         
         # TODO: reshape the following filters correctly.
-        g0_col = self.h0.reshape((1, 1, -1, 1))
-        g1_col = h1.reshape((1, 1, -1, 1))
-        g0_row = self.h0.reshape((1, 1, 1, -1))
-        g1_row = h1.reshape((1, 1, 1, -1))
+        batch = self.h0.size(0)
+
+        g0_col = self.h0.reshape((batch, 1, 1, -1, 1))
+        g1_col = h1.reshape((batch, 1, 1, -1, 1))
+        g0_row = self.h0.reshape((batch, 1, 1, 1, -1))
+        g1_row = h1.reshape((batch, 1, 1, 1, -1))
 
         # Do a multilevel inverse transform
+        idx = 0
         for h in yh[::-1]:
+            # print(f"Reconstructing layers {idx}-----------------------------------")
             if h is None:
+                # TODO: Not modified following line because never using this line
                 h = torch.zeros(ll.shape[0], ll.shape[1], 3, ll.shape[-2],
-                                ll.shape[-1], device=ll.device)
-
+                                ll.shape[-1], device=ll.device)   
+            # ic(ll.shape, h.shape)
             # 'Unpad' added dimensions
             if ll.shape[-2] > h.shape[-2]:
+                # print("Hello1")
                 ll = ll[..., :-1, :]
             if ll.shape[-1] > h.shape[-1]:
+                # print("Hello2")
                 ll = ll[..., :-1]
+
+            # ic(ll.shape, h.shape)
             ll = lowlevel.SFB2D.forward(
-                ll, h, g0_col, g1_col, g0_row, g1_row, mode)
+                ll, h, g0_row, g1_row, g0_col, g1_col, mode)
+            idx = idx + 1
         return ll
 
 

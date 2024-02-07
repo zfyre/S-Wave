@@ -127,11 +127,11 @@ class Trainer():
         self.w_transform.eval()
 
         """Visualizing the Filters b/w training: """
-        (sig, _) = next(iter(data_loader))
-        h0 = self.w_transform.filter_model(sig)[0]
-        high = torch.reshape(low_to_high(torch.reshape(h0, [1, 1, h0.size(0)])),[h0.size(0)])
-        low = h0
-        plot_wavelet(low.cpu(), high.cpu(), sig[0].cpu(), 4100)
+        # (sig, _) = next(iter(data_loader))
+        # h0 = self.w_transform.filter_model(sig)[0]
+        # high = torch.reshape(low_to_high(torch.reshape(h0, [1, 1, h0.size(0)])),[h0.size(0)])
+        # low = h0
+        # plot_wavelet(low.cpu(), high.cpu(), sig[0].cpu(), 4100)
         
         return mean_epoch_loss
 

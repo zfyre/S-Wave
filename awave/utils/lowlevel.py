@@ -48,6 +48,7 @@ def afb1d(x, h0, h1, mode='zero', dim=-1):
         lohi: lowpass and highpass subbands concatenated along the channel
             dimension
     """
+    # ic(h0.shape)
     # print("In afbid:")
     C = x.shape[1]
     # Convert the dim to positive
@@ -64,10 +65,13 @@ def afb1d(x, h0, h1, mode='zero', dim=-1):
     if not isinstance(h1, torch.Tensor):
         h1 = torch.tensor(np.copy(np.array(h1).ravel()[::-1]),
                           dtype=torch.float, device=x.device)
-    L = h0.numel()/h0.shape[0]
+    L = h0.numel()//h0.shape[0]
     L2 = L // 2
     shape = [h0.shape[0], 1, 1, 1, 1]
+    # print(h0.shape)
+    # print(d)
     shape[d+1] = L
+    # ic(shape)
     # If h aren't in the right shape, make them so
     if h0.shape != tuple(shape):
         h0 = h0.reshape(*shape)
@@ -77,6 +81,7 @@ def afb1d(x, h0, h1, mode='zero', dim=-1):
     # print("h0 after pre-processing")
     # ic(h0.shape)
     h = torch.cat([h0, h1] * C, dim=1)
+    # ic(h.shape)
     # print("Adding h0 and h1 & new tensor h")
     # ic(h.shape)
 
@@ -114,20 +119,23 @@ def afb1d(x, h0, h1, mode='zero', dim=-1):
             pad = (p // 2, 0) if d == 2 else (0, p // 2)
             # Calculate the high and lowpass
             # ic(x.shape, h.shape, pad, s, C)
-            lohi = conv2d_parallel(x, h, pad, s)
-            # lohi = F.conv2d(x, h, padding=pad, stride=s, groups=C)
+            # lohi = conv2d_parallel(x, h, pad, s)
+            lohi = [] 
+            for idx in range(h.shape[0]):
+                lohi.append(F.conv2d(x[idx], h[idx], padding=pad, stride=s, groups=C))
+            lohi = torch.stack(lohi)
         elif mode == 'symmetric' or mode == 'reflect' or mode == 'periodic':
             pad = (0, 0, p // 2, (p + 1) // 2) if d == 2 else (p // 2, (p + 1) // 2, 0, 0)
             x = mypad(x, pad=pad, mode=mode)
             lohi = F.conv2d(x, h, stride=s, groups=C)
         else:
             raise ValueError("Unkown pad type: {}".format(mode))
-
     return lohi
 
 def sfb1d(lo, hi, g0, g1, mode='zero', dim=-1):
     """ 1D synthesis filter bank of an image tensor
     """
+    # print("In sfb1d")
     C = lo.shape[1]
     d = dim % 4
     # If g0, g1 are not tensors, make them. If they are, then assume that they
@@ -138,7 +146,7 @@ def sfb1d(lo, hi, g0, g1, mode='zero', dim=-1):
     if not isinstance(g1, torch.Tensor):
         g1 = torch.tensor(np.copy(np.array(g1).ravel()),
                           dtype=torch.float, device=lo.device)
-    L = g0.numel()/g0.shape[0]
+    L = g0.numel()//g0.shape[0]
     shape = [g0.shape[0], 1, 1, 1, 1]
     shape[d+1] = L
     N = 2 * lo.shape[d]
@@ -150,8 +158,8 @@ def sfb1d(lo, hi, g0, g1, mode='zero', dim=-1):
     # print("After Preprocessing in sfb1d")
     # ic(g0.shape, g1.shape)
     s = (2, 1) if d == 2 else (1, 2)
-    g0 = torch.cat([g0] * C, dim=0)
-    g1 = torch.cat([g1] * C, dim=0)
+    g0 = torch.cat([g0] * C, dim=1)
+    g1 = torch.cat([g1] * C, dim=1)
     # ic(g0.shape, g1.shape)
     if mode == 'per' or mode == 'periodization':
         y = F.conv_transpose2d(lo, g0, stride=s, groups=C) + \
@@ -167,12 +175,19 @@ def sfb1d(lo, hi, g0, g1, mode='zero', dim=-1):
         if mode == 'zero' or mode == 'symmetric' or mode == 'reflect' or \
                 mode == 'periodic':
             pad = (L - 2, 0) if d == 2 else (0, L - 2)
-            # ic(lo.shape, hi.shape, pad, s)
-            y = conv_transpose2d_parallel(lo, g0, s, pad) + conv_transpose2d_parallel(hi, g0, s, pad)
+            # ic(lo.shape, hi.shape, g0.shape, g1.shape, pad, s)
+            # y_prime = conv_transpose2d_parallel(lo, hi, g0, g1, pad, s, C)
             # y = F.conv_transpose2d(lo, g0[0], stride=s, padding=pad, groups=C) + \
             #     F.conv_transpose2d(hi, g1[0], stride=s, padding=pad, groups=C)
-            # ic(y.shape)
-            
+            y = [] 
+            for idx in range(g0.shape[0]):
+                y.append(F.conv_transpose2d(lo[idx], g0[idx], stride=s, padding=pad, groups=C) + \
+                             F.conv_transpose2d(hi[idx], g1[idx], stride=s, padding=pad, groups=C)
+                )
+            y = torch.stack(y)
+            # ic(y.shape, y_prime.shape)
+            # assert y == y_prime
+
         else:
             raise ValueError("Unkown pad type: {}".format(mode))
 
@@ -332,12 +347,18 @@ class AFB2D(Function):
     @staticmethod
     def forward(x, h0_row, h1_row, h0_col, h1_col, mode):
         mode = int_to_mode(mode)
+        # ic(x.shape, h0_row.shape, h1_row.shape, h0_col.shape, h1_col.shape)
         lohi = afb1d(x, h0_row, h1_row, mode=mode, dim=3)
+        # ic(lohi.shape)
         y = afb1d(lohi, h0_col, h1_col, mode=mode, dim=2)
+        # ic(y.shape)
         s = y.shape
         y = y.reshape(s[0], -1, 4, s[-2], s[-1])
         low = y[:, :, 0].contiguous()
         highs = y[:, :, 1:].contiguous()
+
+        # ic(low.shape, highs.shape)
+        # assert False
         return low, highs
 
 
@@ -373,7 +394,6 @@ class AFB1D(Function):
         h1 = h1[:, :, None, :]
         # print("After making inputs 4d") # To take care of Height dimension.
         # ic(h0.shape, h1.shape)
-
         lohi = afb1d(x, h0, h1, mode=mode, dim=3)
         # print("Back to transform1d forward")
         # ic(lohi.shape)
@@ -410,11 +430,18 @@ class SFB2D(Function):
     @staticmethod
     def forward(low, highs, g0_row, g1_row, g0_col, g1_col, mode):
         mode = int_to_mode(mode)
-
-        lh, hl, hh = torch.unbind(highs, dim=2)
+        lh, hl, hh = torch.unbind(highs, dim=1)
+        # ic(highs.shape, low.shape, lh.shape, hl.shape, hh.shape, g0_col.shape, g1_col.shape)
+        # print("low & lh")
         lo = sfb1d(low, lh, g0_col, g1_col, mode=mode, dim=2)
+        # ic(lo.shape)
+        # print("hl & hh")
         hi = sfb1d(hl, hh, g0_col, g1_col, mode=mode, dim=2)
+        # ic(hi.shape)
+        # print("lo & hi")
         y = sfb1d(lo, hi, g0_row, g1_row, mode=mode, dim=3)
+        # print("Output of Layer 1")
+        # ic(y.shape)
         return y
 
 
