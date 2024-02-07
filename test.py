@@ -29,7 +29,7 @@ print("Out shape:", y.shape)
 for id in range(100, 120):
     plt.close()
     h0 = y[id]
-    sig = x[0][id]
+    sig = x[3   ][id]
     # plot_waveform(sig,4100)
     # ic(filter)
     high = torch.reshape(low_to_high(torch.reshape(h0, [1, 1, h0.size(0)])),[h0.size(0)])

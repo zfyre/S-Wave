@@ -33,25 +33,23 @@ class DWT1d(AbstractWT):
     # The default values are mentioned.
     def __init__(self, wave='db3',filter_model = None, mode='zero', J=5, init_factor=1, noise_factor=0, const_factor=0, device='cpu'):
         super().__init__()
-
-        self.device = device
-        self.filter_model = filter_model
-
         # Load the wavelet from pywt
         h0, _ = lowlevel.load_wavelet(wave)
-        
+
+        # Get the filter model.
+        self.filter_model = filter_model
+
         # initialize by adding random noise
         h0 = init_filter(h0, init_factor, noise_factor, const_factor)
 
         # TODO: If no model provided then initialize with db wavelet and then do the normal fwd pass.
-        # parameterize as a gradient-tensor
         # self.h0 = nn.Parameter(h0, requires_grad=True)
         self.h0 = h0  
-                
-        # sefl.h0 = CNN_Models
+
         self.J = J
         self.mode = mode
         self.wt_type = 'DWT1d'
+        self.device = device
 
     def forward(self, x):
 
@@ -121,7 +119,9 @@ class DWT1d(AbstractWT):
 
         # h1 = low_to_high(self.h0)
         h1 = low_to_high_parallel(self.h0)
+
         # ic(self.h0.shape, h1.shape, x0.shape)
+
         # Do a multilevel inverse transform
         for x1 in highs[::-1]:
             if x1 is None:

@@ -3,3 +3,4 @@ trim/
 __pycache__
 models/
 res/
+cifar_10.zip

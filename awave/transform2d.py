@@ -1,10 +1,12 @@
 import torch
 import torch.nn as nn
-import torch.optim
 
 from awave.utils import lowlevel
-from awave.utils.misc import init_filter, low_to_high
 from awave.transform import AbstractWT
+from awave.utils.misc import init_filter, low_to_high, low_to_high_parallel
+
+from icecream import ic
+from visualization import * 
 
 class DWT2d(AbstractWT):
     '''Class of 2d wavelet transform 
@@ -20,11 +22,18 @@ class DWT2d(AbstractWT):
             3) a tuple of numpy arrays, either (h0, h1) or (h0_col, h1_col, h0_row, h1_row)
     mode: str
         'zero', 'symmetric', 'reflect' or 'periodization'. The padding scheme
+
+    filter_model: nn.Module;
+        A Predefine nn.Module object for determnining filters as a model
     '''
 
-    def __init__(self, wave='db3', mode='zero', J=5, init_factor=1, noise_factor=0, const_factor=0, device='cpu'):
+    def __init__(self, wave='db3', filter_model = None, mode='zero', J=5, init_factor=1, noise_factor=0, const_factor=0, device='cpu'):
         super().__init__()
         h0, _ = lowlevel.load_wavelet(wave)
+
+        # Get the filter model.
+        self.filter_model = filter_model
+
         # initialize
         h0 = init_filter(h0, init_factor, noise_factor, const_factor)
         # parameterize
@@ -59,7 +68,14 @@ class DWT2d(AbstractWT):
         ll = x
         mode = lowlevel.mode_to_int(self.mode)
 
-        h1 = low_to_high(self.h0)
+        if self.filter_model is not None:
+            low_pass = self.filter_model(x)
+            self.h0 = torch.reshape(low_pass, [low_pass.size(0), 1, 1, low_pass.size(1)])
+
+        # TODO: check if `low_to_high_parallel` is correctly implemented or not cause, right now it's chat-gpt
+        h1 = low_to_high_parallel(self.h0) 
+        # h1 = low_to_high(self.h0)
+
         h0_col = self.h0.reshape((1, 1, -1, 1))
         h1_col = h1.reshape((1, 1, -1, 1))
         h0_row = self.h0.reshape((1, 1, 1, -1))
@@ -100,7 +116,10 @@ class DWT2d(AbstractWT):
         ll = yl
         mode = lowlevel.mode_to_int(self.mode)
 
-        h1 = low_to_high(self.h0)
+        h1 = low_to_high_parallel(self.h0)
+        # h1 = low_to_high(self.h0)
+        
+        # TODO: reshape the following filters correctly.
         g0_col = self.h0.reshape((1, 1, -1, 1))
         g1_col = h1.reshape((1, 1, -1, 1))
         g0_row = self.h0.reshape((1, 1, 1, -1))

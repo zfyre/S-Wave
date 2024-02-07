@@ -1,5 +1,6 @@
 from copy import deepcopy
-from awave.utils.misc import plot_grad_flow, initialize_weights_he, initialize_weights_xavier, initialize_weights
+from awave.utils.misc import plot_grad_flow, initialize_weights, low_to_high
+from visualization import plot_wavelet
 import numpy as np
 import torch
 
@@ -69,10 +70,10 @@ class Trainer():
             Number of epochs to train the model for.
         """
 
-        print("Initializing Model Weights...")
+        print('\033[96m'+"Initializing Model Weights..."+'\033[0m')
         initialize_weights(self.w_transform.filter_model)
 
-        print("Starting Training Loop...")
+        print('\033[92m'+ "Starting Training Loop..."+'\033[0m')
         self.train_losses = np.empty(epochs)
         self.test_losses = np.empty(epochs)
         for epoch in range(epochs):
@@ -124,6 +125,14 @@ class Trainer():
         mean_epoch_loss = epoch_loss / (batch_idx + 1)
         self.lr_scheduler.step()
         self.w_transform.eval()
+
+        """Visualizing the Filters b/w training: """
+        (sig, _) = next(iter(data_loader))
+        h0 = self.w_transform.filter_model(sig)[0]
+        high = torch.reshape(low_to_high(torch.reshape(h0, [1, 1, h0.size(0)])),[h0.size(0)])
+        low = h0
+        plot_wavelet(low.cpu(), high.cpu(), sig[0].cpu(), 4100)
+        
         return mean_epoch_loss
 
     def _train_iteration(self, data):

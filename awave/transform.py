@@ -83,14 +83,14 @@ class AbstractWT(nn.Module):
                                                        batch_size=batch_size)
         #             print(iter(train_loader).next())
 
-        ic(train_loader)
+        # ic(train_loader)
 
         # Get optimizer initialized for the wavelet Transform parameters.
         # params = list(self.parameters())
         params = nn.ParameterList(self.parameters())
         optimizer = torch.optim.Adam(params, lr=lr)
-
         scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.9)
+
 
         # Get the Loss imported from the get_loss_f function.
         loss_f = get_loss_f(lamlSum=lamlSum, lamhSum=lamhSum,
