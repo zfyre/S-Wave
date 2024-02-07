@@ -152,7 +152,7 @@ class DWT2d(AbstractWT):
 
             # ic(ll.shape, h.shape)
             ll = lowlevel.SFB2D.forward(
-                ll, h, g0_row, g1_row, g0_col, g1_col, mode)
+                ll, h, g0_col, g1_col, g0_row, g1_row, mode)
             idx = idx + 1
         return ll
 
