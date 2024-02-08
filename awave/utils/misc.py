@@ -182,44 +182,27 @@ def low_to_high_parallel(x):
     y = torch.flip(x, (3,)) * seq
     return y
 
-def conv2d_parallel(input, filters, padding, stride, groups=None):
-
-    B , C, H, W = input.size();
-    _, out_channels, kC, kH, kW = filters.size()
-
-    # Reshape input to (B, C, H*W)
-    input = input.view(B, C, H*W)
-    # Reshape filters to (out_channels, in_channels, kH, kW)
-    filters = filters.view(B * out_channels, kC, kH, kW)
-    # Apply 2D convolution with groups=B
-    pad = tuple(int(x) for x in padding)
-    output = F.conv2d(input, filters, stride=stride, padding=pad, groups=B)
-    # Reshape output to (batch, out_channels, C, H, W)
-    output = output.view(B, out_channels, output.size(1), output.size(2))
-
-    return output
+def conv2d_parallel(x, h, p, s, C):
+    x_reshape = x.reshape(-1, x.shape[-2], x.shape[-1])
+    h_reshape = h.reshape(-1, 1, h.shape[-2], h.shape[-1])
+    # print(x_reshape.shape, h_reshape.shape)
+    out = F.conv2d(x_reshape, h_reshape, padding=p, stride=s, groups=C*x.shape[0])
+    # print(out.shape)
+    return out.reshape(-1, h.shape[1], out.shape[-2], out.shape[-1])
 
 def conv_transpose2d_parallel(lo, hi, g0, g1, pad, s, C=None):
-    batch_size = g0.shape[0]
-    # Assuming lo, hi, g0, g1 are all tensors of shape (batch_size, channels, height, width)
-    # s is the stride, pad is the padding, C is the number of groups
 
-    # Reshape lo and hi to (batch_size * channels, 1, height, width)
-    lo_reshaped = lo.view(-1, 1, lo.shape[2], lo.shape[3])
-    hi_reshaped = hi.view(-1, 1, hi.shape[2], hi.shape[3])
+    lo_reshape = lo.reshape(-1, lo.shape[-2], lo.shape[-1])
+    hi_reshape = hi.reshape(-1, hi.shape[-2], hi.shape[-1])
 
-    # Stack g0 and g1 along a new dimension to match the batch dimension of lo and hi
-    g0_with_batch = g0.unsqueeze(0)  # Add batch dimension
-    g1_with_batch = g1.unsqueeze(0)  # Add batch dimension
+    g0_reshape = g0.reshape(-1, 1, g0.shape[-2], g0.shape[-1])
+    g1_reshape = g1.reshape(-1, 1, g1.shape[-2], g1.shape[-1])
+    # print(lo.shape, hi.shape, lo_reshape.shape, hi_reshape.shape)
+    # print(g0.shape, g1.shape, g0_reshape.shape, g1_reshape.shape)
 
-    # Perform the transposed convolution using conv_transpose2d
-    y = F.conv_transpose2d(lo, g0_with_batch, stride=s, padding=pad, groups=C) + \
-        F.conv_transpose2d(hi, g1_with_batch, stride=s, padding=pad, groups=C)
-
-    # Reshape y back to its original shape (batch_size, channels, height, width)
-    y = y.view(batch_size, -1, y.shape[2], y.shape[3])
-
-    return y
+    out = F.conv_transpose2d(lo_reshape, g0_reshape, stride=s, padding=pad, groups=C*lo.shape[0]) + \
+    F.conv_transpose2d(hi_reshape, g1_reshape, stride=s, padding=pad, groups=C*lo.shape[0])
+    return out.reshape(-1, C, out.shape[-2], out.shape[-1])
     
 def conv1d_parallel(input, filters, padding, stride, groups=None):
     # v = F.conv1d(h0, h0, stride=2, padding=n)

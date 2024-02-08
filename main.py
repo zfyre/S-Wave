@@ -48,6 +48,7 @@ if __name__ == "__main__":
         nn.Dropout(0.2),
         nn.Linear(num_ftrs, OUT_CHANNELS)
     )
+    model.to(device)
     
     """Load the data. 
     """
@@ -59,7 +60,7 @@ if __name__ == "__main__":
     # ic(x1[0].shape)
     # Dry run an example on model
     # ic(model(x1[0]).shape)
-    data = torch.load(DATA_PATH)
+    data = torch.load(DATA_PATH).to(device)
     ic(data.shape)
 
     """Train the model. 

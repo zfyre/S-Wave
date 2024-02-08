@@ -119,11 +119,17 @@ def afb1d(x, h0, h1, mode='zero', dim=-1):
             pad = (p // 2, 0) if d == 2 else (0, p // 2)
             # Calculate the high and lowpass
             # ic(x.shape, h.shape, pad, s, C)
-            # lohi = conv2d_parallel(x, h, pad, s)
-            lohi = [] 
-            for idx in range(h.shape[0]):
-                lohi.append(F.conv2d(x[idx], h[idx], padding=pad, stride=s, groups=C))
-            lohi = torch.stack(lohi)
+            
+            """The following iterative method replaced by a matrix version"""
+            # lohi = [] 
+            # for idx in range(h.shape[0]):
+            #     lohi.append(F.conv2d(x[idx], h[idx], padding=pad, stride=s, groups=C))
+            # lohi = torch.stack(lohi)
+
+            lohi = lohi_ = conv2d_parallel(x, h, pad, s, C)
+
+            # print(lohi.shape, lohi_.shape)
+            # assert torch.equal(lohi, lohi_)
         elif mode == 'symmetric' or mode == 'reflect' or mode == 'periodic':
             pad = (0, 0, p // 2, (p + 1) // 2) if d == 2 else (p // 2, (p + 1) // 2, 0, 0)
             x = mypad(x, pad=pad, mode=mode)
@@ -176,17 +182,18 @@ def sfb1d(lo, hi, g0, g1, mode='zero', dim=-1):
                 mode == 'periodic':
             pad = (L - 2, 0) if d == 2 else (0, L - 2)
             # ic(lo.shape, hi.shape, g0.shape, g1.shape, pad, s)
-            # y_prime = conv_transpose2d_parallel(lo, hi, g0, g1, pad, s, C)
             # y = F.conv_transpose2d(lo, g0[0], stride=s, padding=pad, groups=C) + \
             #     F.conv_transpose2d(hi, g1[0], stride=s, padding=pad, groups=C)
-            y = [] 
-            for idx in range(g0.shape[0]):
-                y.append(F.conv_transpose2d(lo[idx], g0[idx], stride=s, padding=pad, groups=C) + \
-                             F.conv_transpose2d(hi[idx], g1[idx], stride=s, padding=pad, groups=C)
-                )
-            y = torch.stack(y)
-            # ic(y.shape, y_prime.shape)
-            # assert y == y_prime
+
+            """The following iterative method replaced by a matrix version"""
+            # y = [] 
+            # for idx in range(g0.shape[0]):
+            #     y.append(F.conv_transpose2d(lo[idx], g0[idx], stride=s, padding=pad, groups=C) + \
+            #                  F.conv_transpose2d(hi[idx], g1[idx], stride=s, padding=pad, groups=C)
+            #     )
+            # y = torch.stack(y)
+            y = y_ = conv_transpose2d_parallel(lo, hi, g0, g1, pad, s, C)
+            # assert torch.equal(y, y_)
 
         else:
             raise ValueError("Unkown pad type: {}".format(mode))
