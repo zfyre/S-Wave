@@ -88,8 +88,8 @@ def make_cifar_dataset():
     test_data = torch.stack([img for img, _ in testset], dim=0)
 
     # Step 3: Save training and testing data into separate .pth files
-    torch.save(train_data, f'{rootdir}/ifar10_train_data.pth')
-    torch.save(test_data, f'{rootdir}/cifar10_test_data.pth')
+    torch.save(train_data, f'{rootdir}/cifar10_train.pth')
+    torch.save(test_data, f'{rootdir}/cifar10_test.pth')
 
     print("Data tensors saved successfully!")
 
