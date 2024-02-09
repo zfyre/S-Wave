@@ -49,6 +49,7 @@ if __name__ == "__main__":
         nn.Linear(num_ftrs, OUT_CHANNELS)
     )
     model.to(device)
+    print(model)
     
     """Load the data. 
     """

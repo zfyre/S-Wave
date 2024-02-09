@@ -1,5 +1,5 @@
 from copy import deepcopy
-from awave.utils.misc import plot_grad_flow, initialize_weights, low_to_high
+from awave.utils.misc import plot_grad_flow, initialize_weights, low_to_high, initialize_weights_he
 from visualization import plot_wavelet
 import numpy as np
 import torch
@@ -72,6 +72,7 @@ class Trainer():
 
         print('\033[96m'+"Initializing Model Weights..."+'\033[0m')
         initialize_weights(self.w_transform.filter_model)
+        # initialize_weights_he(self.w_transform.filter_model)
 
         print('\033[92m'+ "Starting Training Loop..."+'\033[0m')
         self.train_losses = np.empty(epochs)
@@ -81,9 +82,9 @@ class Trainer():
                 mean_epoch_loss = self._train_epoch(train_loader, epoch)
                 mean_epoch_test_loss = self._test_epoch(test_loader)
                 if epoch % self.n_print == 0:
-                    print('\n====> Epoch: {} Average train loss: {:.4f} (Test set loss: {:.4f})'.format(epoch,
+                    print('\033[92m'+'\n====> Epoch: {} Average train loss: {:.4f} (Test set loss: {:.4f})'.format(epoch,
                                                                                                         mean_epoch_loss,
-                                                                                                        mean_epoch_test_loss))
+                                                                                                        mean_epoch_test_loss)+'\033[0m')
 
                 self.train_losses[epoch] = mean_epoch_loss
                 self.test_losses[epoch] = mean_epoch_test_loss
@@ -91,7 +92,7 @@ class Trainer():
             else:
                 mean_epoch_loss = self._train_epoch(train_loader, epoch)
                 if epoch % self.n_print == 0:
-                    print('\n====> Epoch: {} Average train loss: {:.4f}'.format(epoch, mean_epoch_loss))
+                    print('\033[92m'+'\n====> Epoch: {} Average train loss: {:.4f}'.format(epoch, mean_epoch_loss)+'\033[0m')
                 try:
                     self.train_losses[epoch] = mean_epoch_loss
                 except:

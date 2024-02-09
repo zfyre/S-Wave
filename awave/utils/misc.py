@@ -9,14 +9,14 @@ from matplotlib.lines import Line2D
 from icecream import ic
 
 def initialize_weights(model):
-    for m in model.modules():
-        if isinstance(m,(nn.Conv1d, nn.BatchNorm1d, nn.Linear)):
-            nn.init.normal_(m.weight.data,0.0,0.005 ) # play with these parms
+    for layer in model.modules():
+        if isinstance(layer, (nn.Conv1d, nn.BatchNorm1d, nn.Linear, nn.Conv2d, nn.BatchNorm2d)):
+            nn.init.normal_(layer.weight.data,0.0,0.005 ) # play with these parms
 
 # great for tanh or sigmoid-type activations;
 def initialize_weights_xavier(model):
     for layer in model.modules():
-        if isinstance(layer, (nn.Conv1d, nn.BatchNorm1d, nn.Linear)):
+        if isinstance(layer, (nn.Conv1d, nn.BatchNorm1d, nn.Linear, nn.Conv2d, nn.BatchNorm2d)):
             nn.init.xavier_uniform_(layer.weight)
             if layer.bias is not None:
                 nn.init.constant_(layer.bias, 0)
@@ -24,9 +24,9 @@ def initialize_weights_xavier(model):
 # great for relu-type activations;
 def initialize_weights_he(model):
     for layer in model.modules():
-        if isinstance(layer, (nn.Conv1d, nn.BatchNorm1d, nn.Linear)):
-            # nn.init.kaiming_uniform_(layer.weight, mode='fan_in', nonlinearity='relu')
-            nn.init.kaiming_uniform_(layer.weight, mode='fan_in', nonlinearity='leaky_relu', a=0.1) # 'a' - negative slope used in leaky-relu
+        if isinstance(layer,(nn.Conv1d, nn.BatchNorm1d, nn.Linear, nn.Conv2d, nn.BatchNorm2d)):
+            nn.init.kaiming_uniform_(layer.weight, mode='fan_in', nonlinearity='relu')
+            # nn.init.kaiming_uniform_(layer.weight, mode='fan_in', nonlinearity='leaky_relu', a=0.1) # 'a' - negative slope used in leaky-relu
             if layer.bias is not None:
                 nn.init.constant_(layer.bias, 0)
 
