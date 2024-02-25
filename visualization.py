@@ -10,24 +10,19 @@ countsg = 0
 
 def plot_filter_banks(low, high):
     
+    fig, ax = plt.subplots(2,1,figsize=(10,5))
+
     low = low.detach().numpy()
     high = high.detach().numpy()
-    [dec_lo, dec_hi, rec_lo, rec_hi] = [low, high, low, high]
 
-    fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(15,7))
-    ax1.stem(dec_lo) 
-    ax1.set_title('Decomposition low-pass filter')
-    ax2.stem(dec_hi)
-    ax2.set_title('Decomposition high-pass filter')
-    ax3.stem(rec_lo)
-    ax3.set_title('Reconstruction low-pass filter')
-    ax4.stem(rec_hi)
-    ax4.set_title('Reconstruction high-pass filter')
+    phi = np.convolve(low, low)
+    psi = np.convolve(high, low)
 
-    global countfb
-    plt.savefig(f'res/filter_banks/filter_bank{countfb}.png')
-    # plt.show()
-    countfb +=1
+    # Plot the scaling and wavelet functions
+    ax[0].plot(phi, label='Scaling Function (phi)')
+    ax[0].plot(psi, label='Wavelet Function (psi)')
+    plt.plot()
+
 
 def plot_waveform(waveform, sample_rate):
     waveform = waveform.numpy()

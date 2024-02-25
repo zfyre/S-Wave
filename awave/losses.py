@@ -53,7 +53,7 @@ class Loss():
         self.lamCMF = lamCMF
         self.lamConv = lamConv
         self.lamL1wave = lamL1wave
-        # self.lamL1attr = lamL1attr
+        self.lamL1attr = lamL1attr
         self.lamHighfreq = lamHighfreq
 
     def __call__(self, w_transform, data, recon_data, data_t, attributions=None):
@@ -112,20 +112,25 @@ class Loss():
             self.L1wave_loss += _L1_wave_loss(data_t)
 
         # L1 penalty on attributions
-        # self.L1attr_loss = 0
-        # if self.lamL1attr > 0 and attributions is not None:
-        #     self.L1attr_loss += _L1_attribution_loss(attributions)
+        self.L1attr_loss = 0
+        if self.lamL1attr > 0 and attributions is not None:
+            self.L1attr_loss += _L1_attribution_loss(attributions)
 
         # Penalty on high frequency of h0  
         self.highfreq_loss = 0
         if self.lamHighfreq > 0:
             self.highfreq_loss += _penalty_high_freq(w_transform)
 
-        # total loss
-        loss = self.rec_loss + self.lamlSum * self.lsum_loss + self.lamhSum * self.hsum_loss + self.lamL2norm * self.L2norm_loss \
-                + self.lamCMF * self.CMF_loss + self.lamConv * self.conv_loss + self.lamL1wave * self.L1wave_loss \
-                + self.lamHighfreq * self.highfreq_loss\
-                # + self.lamL1attr * self.L1attr_loss \
+        # Total loss
+        loss = self.rec_loss \
+                + self.lamL2norm * self.L2norm_loss \
+                + self.lamhSum * self.hsum_loss + self.lamlSum * self.lsum_loss \
+                + self.lamCMF * self.CMF_loss \
+                + self.lamConv * self.conv_loss \
+                + self.lamL1wave * self.L1wave_loss \
+                # + self.lamHighfreq * self.highfreq_loss \
+                # + self.lamL1attr * self.L1attr_loss 
+                
         # ic(loss)
         return loss
 
@@ -156,28 +161,28 @@ def _reconstruction_loss(data, recon_data): # DONE!!
     return loss
 
 
-def _lsum_loss(w_transform): # DONE!!
+def _lsum_loss(w_transform): # DONE!! -> We want the sum = root(2)
     """
     Calculate sum of lowpass filter
     """
     h0 = w_transform.h0
-    B = h0.shape[0]
+    batch_size = h0.shape[0]
     loss = .5 * (h0.sum(dim=(1,2,3)) - np.sqrt(2)) ** 2
 
-    loss = loss.sum() / B
+    loss = loss.sum() / batch_size
     return loss
 
 
-def _hsum_loss(w_transform): # DONE!!
+def _hsum_loss(w_transform): # DONE!!-> We want the sum = 0
     """
     Calculate sum of highpass filter
     """
     h0 = w_transform.h0
     h1 = low_to_high(h0)
-    B = h0.shape[0]
+    batch_size = h0.shape[0]
     loss = .5 * h1.sum(dim=(1,2,3)) ** 2
 
-    loss = loss.sum() / B
+    loss = loss.sum() / batch_size
     return loss
 
 
@@ -223,7 +228,7 @@ def _CMF_loss_parallel(w_transform): # DONE!!
     z = (cmf_identity - 2) ** 2
     loss = .5 * z.sum(dim=(1))
 
-    loss = loss.sum() / B
+    loss = torch.sum(loss) / B
     return loss
 
 
@@ -241,6 +246,7 @@ def _conv_loss(w_transform):
 
     return loss
 
+#TODO: Modify the code and make it correct it's currently wrong i think so...
 def _conv_loss_parallel(w_transform): # DONE!!
     """
     Calculate convolution of lowpass filter
@@ -278,17 +284,17 @@ def _L1_wave_loss(coeffs):
     return loss
 
 
-""" Not considering the Attribution Loss Currently """
+""" Not considering attribution Loss  """
 
-# def _L1_attribution_loss(attributions):
-#     """
-#     Calculate L1 norm of the attributions
-#     """
-#     batch_size = attributions[0].size(0)
-#     loss = tuple_L1Loss(attributions)
-#     loss = loss / batch_size
+def _L1_attribution_loss(attributions):
+    """
+    Calculate L1 norm of the attributions
+    """
+    batch_size = attributions[0].size(0)
+    loss = tuple_L1Loss(attributions)
+    loss = loss / batch_size
 
-#     return loss
+    return loss
 
 
 def _penalty_high_freq(w_transform): #TODO

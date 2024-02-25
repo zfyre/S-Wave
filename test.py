@@ -1,22 +1,77 @@
 import torch
+import matplotlib.pyplot as plt
+from icecream import ic
+# -------------------------------------------
+"""Quadrature/Conjugate filters generation."""
+# x = torch.rand([1,1,20])
+# n = x.size(2)
+# seq = (-1) ** torch.arange(n)
+# print(seq)
+# y = torch.flip(x, (0, 2)) * seq
+# print(x)
+# print(y)
+# -------------------------------------------
+"""Quadrature/Conjugate filters Condition."""
+# h0 = torch.rand([1,1,4])
+# n = h0.size(2)
+# ic(h0)   
+# h_f = torch.fft.fft(h0)
+# mod = abs(h_f) ** 2 
+# ic(h_f)
+# ic(mod)
+# cmf_identity = mod[0, 0, :n // 2] + mod[0, 0, n // 2:]
+# ic(cmf_identity)
+# print(h_f)
+# -------------------------------------------
+"""Visualizing trained 2D model on CIFAR-10"""
+def denormalize(img):
+    mean = torch.tensor([0.5, 0.5, 0.5]).view(3, 1, 1)
+    std = torch.tensor([0.5, 0.5, 0.5]).view(3, 1, 1)
+    img = img * std + mean  # Apply the reverse formula
+    return img
 
-h0 = torch.rand([32, 1, 1, 8])
-h1 = torch.rand([32, 1, 1, 8])
+# Make sure to clip the values to [0, 1] if you're planning to visualize the images
+# img_denormalized = denormalize(img)
+# img_denormalized.clamp_(0, 1)
 
-g0_col = h0.reshape((h0.size(0), 1, -1, 1))
-g1_col = h1.reshape((h1.size(0), 1, -1, 1))
-g0_row = h0.reshape((h0.size(0), 1, 1, -1))
-g1_row = h1.reshape((h1.size(0), 1, 1, -1))
+awt = torch.load('models/awave.transform2d__BATCH-512__EPOCH-1__DATA-all-losses__FILTER-20__TIME-1708893136.8584223.pth')
 
-print(g0_col.shape)
-print(g1_col.shape)
-print(g0_row.shape)
-print(g1_row.shape)
+data = torch.load('data/cifar10_test.pth')
+plt.imshow(denormalize(data[1]).permute(1, 2, 0))
+plt.title("Original Image")
+plt.show()
 
-print(h0.numel())
+s = data[1].shape
+img = data[1].reshape(1, s[0], s[1], s[2])
+coeffs = awt.forward(img)
 
-x = torch.rand([3,3,6,24732])
+recon_x = awt.inverse(coeffs)
+recon_x = recon_x.squeeze().detach()
+
+plt.imshow(denormalize(recon_x).permute(1, 2, 0))
+plt.title("Approximation Image")
+plt.show()
+
+# -------------------------------------------
+# h0 = torch.rand([32, 1, 1, 8])
+# h1 = torch.rand([32, 1, 1, 8])
+
+# g0_col = h0.reshape((h0.size(0), 1, -1, 1))
+# g1_col = h1.reshape((h1.size(0), 1, -1, 1))
+# g0_row = h0.reshape((h0.size(0), 1, 1, -1))
+# g1_row = h1.reshape((h1.size(0), 1, 1, -1))
+
+# print(g0_col.shape)
+# print(g1_col.shape)
+# print(g0_row.shape)
+# print(g1_row.shape)
+
+# print(h0.numel())
+
+# x = torch.rand([3,3,6,24732])
 # lh, hl, hh = torch.unbind(x, dim=2)
+# -------------------------------------------
+
 
 
 

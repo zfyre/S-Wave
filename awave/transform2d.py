@@ -7,6 +7,19 @@ from awave.utils.misc import init_filter, low_to_high, low_to_high_parallel
 
 from icecream import ic
 from visualization import * 
+import matplotlib.pyplot as plt
+
+def _get_h0(filter_model, x):
+
+    low_pass = filter_model(x)
+    h0 = torch.reshape(low_pass, [low_pass.size(0), 1, 1, low_pass.size(1)])
+    return h0
+
+def denormalize(img):
+    mean = torch.tensor([0.5, 0.5, 0.5]).view(3, 1, 1)
+    std = torch.tensor([0.5, 0.5, 0.5]).view(3, 1, 1)
+    img = img * std + mean  # Apply the reverse formula
+    return img
 
 class DWT2d(AbstractWT):
     '''Class of 2d wavelet transform 
@@ -70,9 +83,7 @@ class DWT2d(AbstractWT):
         mode = lowlevel.mode_to_int(self.mode)
         # ic(x.shape)
         if self.filter_model is not None:
-            low_pass = self.filter_model(x)
-            # ic(low_pass.shape)
-            self.h0 = torch.reshape(low_pass, [low_pass.size(0), 1, 1, low_pass.size(1)])
+            self.h0 = _get_h0(self.filter_model, x)
 
         # TODO: check if `low_to_high_parallel` is correctly implemented or not cause, right now it's chat-gpt
         h1 = low_to_high_parallel(self.h0) 
@@ -156,4 +167,23 @@ class DWT2d(AbstractWT):
             idx = idx + 1
         return ll
 
+    def plot(self):
 
+        """ Args: input image in [B, C, H, W], where B = 1  
+            return: Wavelet plot + reconstructed image
+        """
+        data = torch.load('data/cifar10_test.pth')
+        plt.imshow(denormalize(data[1]).permute(1, 2, 0))
+        plt.title("Original Image")
+        plt.show()
+
+        s = data[1].shape
+        img = data[1].reshape(1, s[0], s[1], s[2])
+        coeffs = self.forward(img)
+
+        recon_x = self.inverse(coeffs)
+        recon_x = recon_x.squeeze().detach()
+
+        plt.imshow(denormalize(recon_x).permute(1, 2, 0))
+        plt.title("Approximation Image")
+        plt.show()

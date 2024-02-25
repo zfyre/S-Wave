@@ -128,6 +128,7 @@ class Trainer():
         self.w_transform.eval()
 
         """Visualizing the Filters b/w training: """
+        self.w_transform.plot()
         # (sig, _) = next(iter(data_loader))
         # h0 = self.w_transform.filter_model(sig)[0]
         # high = torch.reshape(low_to_high(torch.reshape(h0, [1, 1, h0.size(0)])),[h0.size(0)])
@@ -156,7 +157,7 @@ class Trainer():
         # reconstruction
         recon_data = self.wt_inverse(data_t)
         
-        # # TRIM score
+        # TRIM score
         # if self.attributer is not None:
         #     with torch.backends.cudnn.flags(enabled=False):
         #         attributions = self.attributer(
