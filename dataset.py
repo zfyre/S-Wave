@@ -93,7 +93,38 @@ def make_cifar_dataset():
 
     print("Data tensors saved successfully!")
 
+def make_ImageNet_dataset():
+    import torch
+    import torchvision
+    import torchvision.transforms as transforms
+
+    rootdir = './data'
+    if not os.path.exists(rootdir):
+        os.mkdir(rootdir)
+
+    # Step 1: Load CIFAR-10 dataset
+    transform = transforms.Compose([
+        transforms.ToTensor(),
+        transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+    ])
+
+    trainset = torchvision.datasets.ImageNet(root=rootdir, train=True,
+                                            download=True, transform=transform)
+
+    testset = torchvision.datasets.ImageNet(root=rootdir, train=False,
+                                        download=True, transform=transform)
+
+    # Step 2: Extract image data from the datasets
+    train_data = torch.stack([img for img, _ in trainset], dim=0)
+    test_data = torch.stack([img for img, _ in testset], dim=0)
+
+    # Step 3: Save training and testing data into separate .pth files
+    torch.save(train_data, f'{rootdir}/ImageNet_train.pth')
+    torch.save(test_data, f'{rootdir}/ImageNet_test.pth')
+
+    print("Data tensors saved successfully!")
 
 
 if __name__ == "__main__":
     make_cifar_dataset()
+    # make_ImageNet_dataset()

@@ -9,8 +9,8 @@ from icecream import ic
 from visualization import * 
 import matplotlib.pyplot as plt
 
-def _get_h0(filter_model, x):
 
+def _get_h0(filter_model, x):
     low_pass = filter_model(x)
     h0 = torch.reshape(low_pass, [low_pass.size(0), 1, 1, low_pass.size(1)])
     return h0
@@ -166,24 +166,3 @@ class DWT2d(AbstractWT):
                 ll, h, g0_col, g1_col, g0_row, g1_row, mode)
             idx = idx + 1
         return ll
-
-    def plot(self):
-
-        """ Args: input image in [B, C, H, W], where B = 1  
-            return: Wavelet plot + reconstructed image
-        """
-        data = torch.load('data/cifar10_test.pth')
-        plt.imshow(denormalize(data[1]).permute(1, 2, 0))
-        plt.title("Original Image")
-        plt.show()
-
-        s = data[1].shape
-        img = data[1].reshape(1, s[0], s[1], s[2])
-        coeffs = self.forward(img)
-
-        recon_x = self.inverse(coeffs)
-        recon_x = recon_x.squeeze().detach()
-
-        plt.imshow(denormalize(recon_x).permute(1, 2, 0))
-        plt.title("Approximation Image")
-        plt.show()

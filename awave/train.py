@@ -1,8 +1,8 @@
 from copy import deepcopy
 from awave.utils.misc import plot_grad_flow, initialize_weights, low_to_high, initialize_weights_he
-from visualization import plot_wavelet
 import numpy as np
 import torch
+from visualization import plot2D
 
 from icecream import ic
 
@@ -128,13 +128,15 @@ class Trainer():
         self.w_transform.eval()
 
         """Visualizing the Filters b/w training: """
-        self.w_transform.plot()
         # (sig, _) = next(iter(data_loader))
         # h0 = self.w_transform.filter_model(sig)[0]
         # high = torch.reshape(low_to_high(torch.reshape(h0, [1, 1, h0.size(0)])),[h0.size(0)])
         # low = h0
         # plot_wavelet(low.cpu(), high.cpu(), sig[0].cpu(), 4100)
         
+        # self.w_transform.plot()
+        plot2D(self)
+
         return mean_epoch_loss
 
     def _train_iteration(self, data):
@@ -200,6 +202,13 @@ class Trainer():
         ------
         mean_epoch_loss: float
         """
+        # Plotting the original and reconstructed image
+        # (data, _) = next(iter(data_loader))
+        # data = data.to(self.device)
+        # data_t = self.w_transform(data)
+        # recon_data = self.wt_inverse(data_t)
+        # plot2D(data.detach().numpy())
+
         self.w_transform.eval()
         epoch_loss = 0.
         for batch_idx, (data, _) in enumerate(data_loader):

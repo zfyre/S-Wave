@@ -37,20 +37,31 @@ def denormalize(img):
 awt = torch.load('models/awave.transform2d__BATCH-512__EPOCH-1__DATA-all-losses__FILTER-20__TIME-1708893136.8584223.pth')
 
 data = torch.load('data/cifar10_test.pth')
-plt.imshow(denormalize(data[1]).permute(1, 2, 0))
-plt.title("Original Image")
-plt.show()
+# plt.imshow(denormalize(data[1]).permute(1, 2, 0))
+# plt.title("Original Image")
+# plt.show()
 
 s = data[1].shape
 img = data[1].reshape(1, s[0], s[1], s[2])
 coeffs = awt.forward(img)
-
 recon_x = awt.inverse(coeffs)
 recon_x = recon_x.squeeze().detach()
 
 plt.imshow(denormalize(recon_x).permute(1, 2, 0))
 plt.title("Approximation Image")
 plt.show()
+
+# -------------------------------------------
+from visualization import plot2D, plot2DPrime
+
+data = torch.load('data/cifar10_test.pth')
+plt.imshow(denormalize(data[69]).permute(1, 2, 0))
+plt.title("Original Image")
+plt.show()
+img = denormalize(data[69])
+plot2DPrime(img.detach().numpy())
+
+
 
 # -------------------------------------------
 # h0 = torch.rand([32, 1, 1, 8])

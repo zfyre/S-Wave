@@ -26,9 +26,10 @@ def train2d(data, filter_model, device):
     
     # Initializing
     awt = DWT2d(filter_model = filter_model, J=5, device=device).to(device=device)
-
+    # Test Data
+    data_test = torch.load('data/cifar10_test.pth')
     # Training
-    awt.fit(X=data,batch_size = BATCH_SIZE, num_epochs = NUM_EPOCHS, lr= LR)
+    awt.fit(X=data, X_test=data_test, batch_size = BATCH_SIZE, num_epochs = NUM_EPOCHS, lr= LR)
 
     name = f"models/{awt.__module__}__BATCH-{BATCH_SIZE}__EPOCH-{NUM_EPOCHS}__DATA-{DATA_NAME}__FILTER-{OUT_CHANNELS}__TIME-{time.time()}.pth"
     torch.save(awt, name)

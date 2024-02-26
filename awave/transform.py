@@ -7,10 +7,13 @@ from awave.train import Trainer
 
 from icecream import ic
 
+
 class AbstractWT(nn.Module):
 
     def fit(self,
             X=None,
+            X_test=None,
+            test_loader=None,
             train_loader=None,
             lr: float = 0.001,
             batch_size: int = 32,
@@ -61,31 +64,16 @@ class AbstractWT(nn.Module):
         torch.manual_seed(seed) 
 
         # Checking if train_loader is already provided if not make one from data
-        if X is None and train_loader is None:
-            raise ValueError('Either X or train_loader must be passed!')
-        elif train_loader is None:
-            if 'ndarray' in str(type(X)):
-                X = torch.Tensor(X).to(self.device)
+        train_loader = make_dataloader(self, X, train_loader, batch_size)
 
-            # convert to float
-            X = X.float()
-            # ic(X.shape)
-            # TODO: Handling the input for 2D wavelet Transform.
-            # if self.wt_type == 'DWT2d':
-            #     X = X.unsqueeze(1)
+        if X_test != None or test_loader != None :
+            test_loader = make_dataloader(self, X_test, test_loader, batch_size)
 
-            # need to pad as if it had y (to match default pytorch dataloaders)
-            X = [(X[i], np.nan) for i in range(X.shape[0])]
-
-            # Creating the train_loader
-            train_loader = torch.utils.data.DataLoader(X,
-                                                       shuffle=True,
-                                                       batch_size=batch_size)
-        #             print(iter(train_loader).next())
-
-        # ic(train_loader)
+        ic(test_loader)
+        ic(train_loader)
 
         # Get optimizer initialized for the wavelet Transform parameters.
+        
         # params = list(self.parameters())
         params = nn.ParameterList(self.parameters())
         optimizer = torch.optim.Adam(params, lr=lr)
@@ -109,6 +97,31 @@ class AbstractWT(nn.Module):
 
         # Actual training
         self.train()
-        trainer(train_loader, epochs=num_epochs)
+        trainer(train_loader, epochs=num_epochs, test_loader=test_loader)
         self.train_losses = trainer.train_losses
         self.eval()
+
+def make_dataloader(self, X, loader, batch_size):
+    if X is None and loader is None:
+                raise ValueError('Either X or train_loader must be passed!')
+    elif loader is None:
+        if 'ndarray' in str(type(X)):
+            X = torch.Tensor(X).to(self.device)
+
+        # convert to float
+        X = X.float()
+        # ic(X.shape)
+        # TODO: Handling the input for 2D wavelet Transform.
+        # if self.wt_type == 'DWT2d':
+        #     X = X.unsqueeze(1)
+
+        # need to pad as if it had y (to match default pytorch dataloaders)
+        X = [(X[i], np.nan) for i in range(X.shape[0])]
+
+        # Creating the train_loader
+        loader = torch.utils.data.DataLoader(X,
+                                                shuffle=True,
+                                                batch_size=batch_size)
+    #             print(iter(train_loader).next())
+    return loader
+
