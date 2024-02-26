@@ -166,15 +166,15 @@ def denormalize(img):
 
 def plot2D(model):
     data = torch.load('data/cifar10_test.pth')
-    image = data[np.random.randint(0,10000)]
+    image = data[np.random.randint(0,10000)].to(model.device)
 
     s = image.shape
     image = image.reshape(1, s[0], s[1], s[2])
     coeffs = model.w_transform(image)
     recon_x = model.wt_inverse(coeffs)
 
-    recon_x = recon_x.squeeze().detach()
-    image = image.squeeze().detach()
+    recon_x = recon_x.squeeze().detach().cpu()
+    image = image.squeeze().detach().cpu()
     
     fig, axes = plt.subplots(1, 2, figsize=(10, 5))
 
