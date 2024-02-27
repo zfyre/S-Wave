@@ -171,6 +171,7 @@ def plot2D(model):
     s = image.shape
     image = image.reshape(1, s[0], s[1], s[2])
     coeffs = model.w_transform(image)
+
     recon_x = model.wt_inverse(coeffs)
 
     recon_x = recon_x.squeeze().detach().cpu()

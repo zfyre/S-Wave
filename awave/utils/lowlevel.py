@@ -121,12 +121,12 @@ def afb1d(x, h0, h1, mode='zero', dim=-1):
             # ic(x.shape, h.shape, pad, s, C)
             
             """The following iterative method replaced by a matrix version"""
-            # lohi = [] 
-            # for idx in range(h.shape[0]):
-            #     lohi.append(F.conv2d(x[idx], h[idx], padding=pad, stride=s, groups=C))
-            # lohi = torch.stack(lohi)
+            lohi = [] 
+            for idx in range(h.shape[0]):
+                lohi.append(F.conv2d(x[idx], h[idx], padding=pad, stride=s, groups=C))
+            lohi = torch.stack(lohi)
 
-            lohi = lohi_ = conv2d_parallel(x, h, pad, s, C)
+            # lohi = lohi_ = conv2d_parallel(x, h, pad, s, C)
 
             # print(lohi.shape, lohi_.shape)
             # assert torch.equal(lohi, lohi_)
@@ -167,6 +167,8 @@ def sfb1d(lo, hi, g0, g1, mode='zero', dim=-1):
     g0 = torch.cat([g0] * C, dim=1)
     g1 = torch.cat([g1] * C, dim=1)
     # ic(g0.shape, g1.shape)
+    # print(lo[0], hi[0])
+    # assert False
     if mode == 'per' or mode == 'periodization':
         y = F.conv_transpose2d(lo, g0, stride=s, groups=C) + \
             F.conv_transpose2d(hi, g1, stride=s, groups=C)
@@ -181,18 +183,18 @@ def sfb1d(lo, hi, g0, g1, mode='zero', dim=-1):
         if mode == 'zero' or mode == 'symmetric' or mode == 'reflect' or \
                 mode == 'periodic':
             pad = (L - 2, 0) if d == 2 else (0, L - 2)
-            # ic(lo.shape, hi.shape, g0.shape, g1.shape, pad, s)
             # y = F.conv_transpose2d(lo, g0[0], stride=s, padding=pad, groups=C) + \
             #     F.conv_transpose2d(hi, g1[0], stride=s, padding=pad, groups=C)
-
+            # print(lo.shape, hi.shape, g0.shape, g1.shape, pad, s)
+            # assert False
             """The following iterative method replaced by a matrix version"""
-            # y = [] 
-            # for idx in range(g0.shape[0]):
-            #     y.append(F.conv_transpose2d(lo[idx], g0[idx], stride=s, padding=pad, groups=C) + \
-            #                  F.conv_transpose2d(hi[idx], g1[idx], stride=s, padding=pad, groups=C)
-            #     )
-            # y = torch.stack(y)
-            y = y_ = conv_transpose2d_parallel(lo, hi, g0, g1, pad, s, C)
+            y = [] 
+            for idx in range(g0.shape[0]):
+                y.append(F.conv_transpose2d(lo[idx], g0[idx], stride=s, padding=pad, groups=C) + \
+                             F.conv_transpose2d(hi[idx], g1[idx], stride=s, padding=pad, groups=C)
+                )
+            y = torch.stack(y)
+            # y = y_ = conv_transpose2d_parallel(lo, hi, g0, g1, pad, s, C)
             # assert torch.equal(y, y_)
 
         else:
@@ -437,12 +439,15 @@ class SFB2D(Function):
     @staticmethod
     def forward(low, highs, g0_row, g1_row, g0_col, g1_col, mode):
         mode = int_to_mode(mode)
-        lh, hl, hh = torch.unbind(highs, dim=1)
+        lh, hl, hh = torch.unbind(highs, dim=2)
+        # assert False
         # ic(highs.shape, low.shape, lh.shape, hl.shape, hh.shape, g0_col.shape, g1_col.shape)
         # print("low & lh")
         lo = sfb1d(low, lh, g0_col, g1_col, mode=mode, dim=2)
         # ic(lo.shape)
         # print("hl & hh")
+        # print(lo)
+        # assert False
         hi = sfb1d(hl, hh, g0_col, g1_col, mode=mode, dim=2)
         # ic(hi.shape)
         # print("lo & hi")

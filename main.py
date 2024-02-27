@@ -26,7 +26,7 @@ def train1d(data, filter_model, device):
 def train2d(data, filter_model, device):
     
     # Initializing
-    awt = DWT2d(filter_model = filter_model, J=8, device=device, useExistingFilter=False, wave='coif1').to(device=device)
+    awt = DWT2d(filter_model = filter_model, J=5, device=device, useExistingFilter=True, wave='db3').to(device=device)
     # Test Data
     data_test = torch.load('data/cifar10_test.pth')
     # Training

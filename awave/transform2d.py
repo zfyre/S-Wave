@@ -90,8 +90,8 @@ class DWT2d(AbstractWT):
         if self.filter_model is not None:
             self.h0 = _get_h0(self.filter_model, x, self.useExistingFilter, wave='db3', init_factor=1, noise_factor=0, const_factor=0)
             self.h0 = self.h0.to(self.device)
-        # TODO: check if `low_to_high_parallel` is correctly implemented or not cause, right now it's chat-gpt
         h1 = low_to_high_parallel(self.h0) 
+
         # h1 = low_to_high(self.h0)
         # ic(h1.shape)
         # ic(self.h0.shape)
@@ -102,6 +102,8 @@ class DWT2d(AbstractWT):
         h1_col = h1.reshape((batch, 1, 1, -1, 1))
         h0_row = self.h0.reshape((batch, 1,  1, 1, -1))
         h1_row = h1.reshape((batch, 1, 1, 1, -1))
+
+
 
         # Do a multilevel transform
         for j in range(self.J):
@@ -157,17 +159,14 @@ class DWT2d(AbstractWT):
                 # TODO: Not modified following line because never using this line
                 h = torch.zeros(ll.shape[0], ll.shape[1], 3, ll.shape[-2],
                                 ll.shape[-1], device=ll.device)   
-            # ic(ll.shape, h.shape)
             # 'Unpad' added dimensions
             if ll.shape[-2] > h.shape[-2]:
-                # print("Hello1")
                 ll = ll[..., :-1, :]
             if ll.shape[-1] > h.shape[-1]:
-                # print("Hello2")
                 ll = ll[..., :-1]
 
-            # ic(ll.shape, h.shape)
             ll = lowlevel.SFB2D.forward(
                 ll, h, g0_col, g1_col, g0_row, g1_row, mode)
             idx = idx + 1
+
         return ll
