@@ -56,15 +56,15 @@ if __name__ == "__main__":
     """Load the data. 
     """
 
-    transform = transforms.Compose([
-      transforms.ToTensor(),
-      transforms.Normalize((0.5), (0.5))
-    ])
+    # transform = transforms.Compose([
+    #   transforms.ToTensor(),
+    #   transforms.Normalize((0.5), (0.5))
+    # ])
 
-    original = transform(pywt.data.camera()).squeeze()
-    original = torch.stack([original, original, original])
-    data = [original for i in range(100)]
-    data = torch.stack(data)
+    # original = transform(pywt.data.camera()).squeeze()
+    # original = torch.stack([original, original, original])
+    # data = [original for i in range(100)]
+    # data = torch.stack(data)
 
     # data = torch.load(DATA_PATH).to(device)
     # # # ic(data.shape, x[0].shape)
@@ -76,7 +76,7 @@ if __name__ == "__main__":
     # ic(model(x1[0]).shape)
 
     """ Following line for CIFAR10 dataset"""
-    # data = torch.load(DATA_PATH).to(device)
+    data = torch.load(DATA_PATH).to(device)
     ic(data.shape)
 
     """Train the model. 

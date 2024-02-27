@@ -114,18 +114,6 @@ class Trainer():
         mean_epoch_loss: float
         """
 
-        import torchvision.transforms as transforms
-
-        transform = transforms.Compose([
-            transforms.ToTensor(),
-            transforms.Normalize((0.5), (0.5))
-        ])
-
-        original = transform(pywt.data.camera()).squeeze()
-        original = torch.stack([original, original, original])
-        # print(original.shape)
-        plot2DD(self.w_transform, original)
-
         self.w_transform.train()
         epoch_loss = 0.
         for batch_idx, (data, _) in enumerate(data_loader):
@@ -150,9 +138,19 @@ class Trainer():
         # self.w_transform.plot()
 
         # ------------------------------------------
-        # plot2D(self)
+        plot2D(self)
         # ------------------------------------------
+        # import torchvision.transforms as transforms
 
+        # transform = transforms.Compose([
+        #     transforms.ToTensor(),
+        #     transforms.Normalize((0.5), (0.5))
+        # ])
+
+        # original = transform(pywt.data.camera()).squeeze()
+        # original = torch.stack([original, original, original])
+        # # print(original.shape)
+        # plot2DD(self.w_transform, original)
         # ------------------------------------------
 
         return mean_epoch_loss
