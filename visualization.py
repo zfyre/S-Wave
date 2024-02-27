@@ -217,3 +217,28 @@ def plot2DPrime(image):
 
 
 
+def plot2DD(model, image):
+    data = torch.load('data/cifar10_test.pth')
+    # image = data[np.random.randint(0,10000)].to(model.device)
+
+    s = image.shape
+    image = image.reshape(1, s[0], s[1], s[2]).to(model.device)
+    coeffs = model(image)
+    recon_x = model.inverse(coeffs)
+
+    recon_x = recon_x.squeeze().detach().cpu()
+    image = image.squeeze().detach().cpu()
+
+    fig, axes = plt.subplots(1, 2, figsize=(10, 5))
+
+    # Original Image
+    axes[0].imshow(denormalize(image).permute(1, 2, 0))
+    axes[0].set_title("Original Image")
+    axes[0].axis('off')
+    r, g, b = recon_x
+    # Approximation Image
+    axes[1].imshow(denormalize(r).permute(1, 2, 0), cmap='gray')
+    axes[1].set_title("Approximation Image")
+    axes[1].axis('off')
+
+    plt.show()

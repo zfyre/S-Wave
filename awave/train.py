@@ -2,10 +2,10 @@ from copy import deepcopy
 from awave.utils.misc import plot_grad_flow, initialize_weights, low_to_high, initialize_weights_he
 import numpy as np
 import torch
-from visualization import plot2D
+from visualization import plot2D, plot2DD
 
 from icecream import ic
-
+import pywt
 
 class Trainer():
     """
@@ -113,6 +113,19 @@ class Trainer():
         ------
         mean_epoch_loss: float
         """
+
+        import torchvision.transforms as transforms
+
+        transform = transforms.Compose([
+            transforms.ToTensor(),
+            transforms.Normalize((0.5), (0.5))
+        ])
+
+        original = transform(pywt.data.camera()).squeeze()
+        original = torch.stack([original, original, original])
+        # print(original.shape)
+        plot2DD(self.w_transform, original)
+
         self.w_transform.train()
         epoch_loss = 0.
         for batch_idx, (data, _) in enumerate(data_loader):
@@ -135,7 +148,12 @@ class Trainer():
         # plot_wavelet(low.cpu(), high.cpu(), sig[0].cpu(), 4100)
         
         # self.w_transform.plot()
-        plot2D(self)
+
+        # ------------------------------------------
+        # plot2D(self)
+        # ------------------------------------------
+
+        # ------------------------------------------
 
         return mean_epoch_loss
 

@@ -10,9 +10,19 @@ from visualization import *
 import matplotlib.pyplot as plt
 
 
-def _get_h0(filter_model, x):
-    low_pass = filter_model(x)
-    h0 = torch.reshape(low_pass, [low_pass.size(0), 1, 1, low_pass.size(1)])
+def _get_h0(filter_model, x, useExistingFilter = False, wave='db3', init_factor=1, noise_factor=0, const_factor=0):
+    if useExistingFilter:
+        h0, _ = lowlevel.load_wavelet(wave)
+        h0 = init_filter(h0, init_factor, noise_factor, const_factor)
+        batch_size = x.shape[0]
+        h0_list = [h0 for i in range(batch_size)]
+        h0 = torch.stack(h0_list) 
+        # parameterize
+        h0 = nn.Parameter(h0, requires_grad=True)
+    else :    
+        low_pass = filter_model(x)
+        h0 = torch.reshape(low_pass, [low_pass.size(0), 1, 1, low_pass.size(1)])
+
     return h0
 
 def denormalize(img):
@@ -40,19 +50,13 @@ class DWT2d(AbstractWT):
         A Predefine nn.Module object for determnining filters as a model
     '''
 
-    def __init__(self, wave='db3', filter_model = None, mode='zero', J=5, init_factor=1, noise_factor=0, const_factor=0, device='cpu'):
+    def __init__(self, wave='db3', filter_model = None, mode='zero', J=5, init_factor=1, noise_factor=0, const_factor=0, device='cpu', useExistingFilter = False):
         super().__init__()
         h0, _ = lowlevel.load_wavelet(wave)
 
         # Get the filter model.
         self.filter_model = filter_model
-
-        # initialize
-        h0 = init_filter(h0, init_factor, noise_factor, const_factor)
-        # ic(h0.shape)
-        # parameterize
-        # self.h0 = nn.Parameter(h0, requires_grad=True)
-        # self.h0 = self.h0.to(device)
+        self.useExistingFilter = useExistingFilter
 
         self.J = J
         self.mode = mode
@@ -81,10 +85,11 @@ class DWT2d(AbstractWT):
         yh = ()
         ll = x
         mode = lowlevel.mode_to_int(self.mode)
-        # ic(x.shape)
-        if self.filter_model is not None:
-            self.h0 = _get_h0(self.filter_model, x)
 
+        # Initialize the filter
+        if self.filter_model is not None:
+            self.h0 = _get_h0(self.filter_model, x, self.useExistingFilter, wave='db3', init_factor=1, noise_factor=0, const_factor=0)
+            self.h0 = self.h0.to(self.device)
         # TODO: check if `low_to_high_parallel` is correctly implemented or not cause, right now it's chat-gpt
         h1 = low_to_high_parallel(self.h0) 
         # h1 = low_to_high(self.h0)

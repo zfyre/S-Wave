@@ -6,6 +6,7 @@ from awave.filtermodel import FilterConv
 from config import *
 import time
 from icecream import ic
+import pywt
 
 from torchvision import datasets, transforms, models
 
@@ -25,11 +26,11 @@ def train1d(data, filter_model, device):
 def train2d(data, filter_model, device):
     
     # Initializing
-    awt = DWT2d(filter_model = filter_model, J=5, device=device).to(device=device)
+    awt = DWT2d(filter_model = filter_model, J=8, device=device, useExistingFilter=False, wave='coif1').to(device=device)
     # Test Data
     data_test = torch.load('data/cifar10_test.pth')
     # Training
-    awt.fit(X=data, X_test=data_test, batch_size = BATCH_SIZE, num_epochs = NUM_EPOCHS, lr= LR)
+    awt.fit(X=data, X_test=None, batch_size = BATCH_SIZE, num_epochs = NUM_EPOCHS, lr= LR)
 
     name = f"models/{awt.__module__}__BATCH-{BATCH_SIZE}__EPOCH-{NUM_EPOCHS}__DATA-{DATA_NAME}__FILTER-{OUT_CHANNELS}__TIME-{time.time()}.pth"
     torch.save(awt, name)
@@ -54,6 +55,17 @@ if __name__ == "__main__":
     
     """Load the data. 
     """
+
+    transform = transforms.Compose([
+      transforms.ToTensor(),
+      transforms.Normalize((0.5), (0.5))
+    ])
+
+    original = transform(pywt.data.camera()).squeeze()
+    original = torch.stack([original, original, original])
+    data = [original for i in range(100)]
+    data = torch.stack(data)
+
     # data = torch.load(DATA_PATH).to(device)
     # # # ic(data.shape, x[0].shape)
     # x = torch.split(data, min(BATCH_SIZE*500, data.size(0)), 0)
@@ -62,7 +74,9 @@ if __name__ == "__main__":
     # ic(x1[0].shape)
     # Dry run an example on model
     # ic(model(x1[0]).shape)
-    data = torch.load(DATA_PATH).to(device)
+
+    """ Following line for CIFAR10 dataset"""
+    # data = torch.load(DATA_PATH).to(device)
     ic(data.shape)
 
     """Train the model. 
