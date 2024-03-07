@@ -123,9 +123,6 @@ class Loss():
         self.highfreq_loss = 0
         if self.lamHighfreq > 0:
             self.highfreq_loss += _penalty_high_freq(w_transform)
-
-        if initial_filter_loss == True:
-            return _initial_filter_loss(w_transform, wavelet='db3')
             
         # Total loss
         loss = self.rec_loss \
@@ -174,7 +171,7 @@ def _initial_filter_loss(w_transform, wavelet='db3', init_factor=1, noise_factor
     batch_size = h0.shape[0]
     H0, _ = load_wavelet(f'db{h0.shape[1]//2}')
     H0 = init_filter(H0, init_factor, noise_factor, const_factor)
-    H0 = torch.stack([H0]*batch_size).squeeze()
+    H0 = torch.stack([H0]*batch_size).squeeze().to(h0.device)
     assert H0.shape == h0.shape
     loss = .5 * (h0 - H0) ** 2
     return loss.sum() / batch_size

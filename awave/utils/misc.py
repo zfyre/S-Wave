@@ -11,7 +11,7 @@ from icecream import ic
 def initialize_weights(model):
     for layer in model.modules():
         if isinstance(layer, (nn.Conv1d, nn.BatchNorm1d, nn.Linear, nn.Conv2d, nn.BatchNorm2d)):
-            nn.init.normal_(layer.weight.data,0.0,0.005 ) # play with these parms
+            nn.init.normal_(layer.weight.data,0.0,0.01 ) # play with these parms
 
 # great for tanh or sigmoid-type activations;
 def initialize_weights_xavier(model):

@@ -51,5 +51,5 @@ def get_dataset(dataset_name):
 
 
 if __name__ == "__main__":
-    # get_dataset('stl10')
+    get_dataset('stl10')
     get_dataset('cifar10')

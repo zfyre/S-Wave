@@ -44,7 +44,7 @@ class DWT2d(AbstractWT):
         A Predefine nn.Module object for determnining filters as a model
     '''
 
-    def __init__(self, wave='db3', filter_model = None, mode='periodization', J=5, init_factor=1, noise_factor=0, const_factor=0, device='cpu', useExistingFilter = False):
+    def __init__(self, wave='db3', filter_model = None, mode='periodization', J=5, init_factor=1, noise_factor=0, const_factor=0, device='cpu', useExistingFilter = False, random_level = False):
         super().__init__()
         h0, _ = lowlevel.load_wavelet(wave)
 
@@ -53,6 +53,7 @@ class DWT2d(AbstractWT):
         self.useExistingFilter = useExistingFilter
 
         self.J = J
+        self.random_level = random_level
         self.mode = mode
         self.wt_type = 'DWT2d'
         self.device = device
@@ -100,7 +101,10 @@ class DWT2d(AbstractWT):
 
 
         # Do a multilevel transform
-        for j in range(np.random.randint(1,self.J)):
+        J = self.J
+        if self.random_level:
+            J = np.random.randint(1,self.J)
+        for j in range(J):
             # Do 1 level of the transform
             ll, high = lowlevel.AFB2D.forward(
                 ll, h0_col, h1_col, h0_row, h1_row, mode)

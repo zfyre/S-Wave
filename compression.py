@@ -23,16 +23,16 @@ def low_to_high(x):
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # Load the Model
-awt2 = torch.load('models/2D_waveletModel.pth', map_location=device).to(device)
-awt = DWT2d(filter_model = awt2.filter_model, J=4, device=device, useExistingFilter=False, wave='db3').to(device=device)
+# awt2 = torch.load('models/2D_waveletModel.pth', map_location=device).to(device)
+awt2 = torch.load('models/awave.transform2d/filtersize_16-batchsize_64-epochs_50-LR_0.001-J16.pth')
+awt = DWT2d(filter_model = awt2.filter_model, J=16, device=device, useExistingFilter=False, wave='db3').to(device=device)
 
 # awt = torch.load('models/awave.transform2d/filtersize_16-batchsize_64-epochs_5-LR_0.001.pth')
-# awt = torch.load('models/awave.transform2d/filtersize_16-batchsize_64-epochs_10-LR_0.001-J3.pth')
 # awt = DWT2d(filter_model = awt_2.filter_model, J=2, device=awt_2.device, useExistingFilter=False, wave='db3',mode='periodization').to(device=awt_2.device)
 
 # Load the Image
 data = torch.load('data/cifar10_test.pth')
-image = data[np.random.randint(0,10000)].to(device)
+image = data[np.random.randint(0,len(data))].to(device)
 
 # Uncomment to load cameraman!!
 # image = pywt.data.camera().astype(np.float32)

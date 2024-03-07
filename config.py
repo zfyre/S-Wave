@@ -4,5 +4,5 @@ DATA_PATH = 'data/stl10_train.pth'
 DATA_NAME = 'stl10'
 BATCH_SIZE = 64
 NUM_EPOCHS = 10 # 40 is good
-LR = 0.001
+LR = 0.009
 LEVEL = 4
