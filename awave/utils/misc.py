@@ -182,15 +182,18 @@ def low_to_high_parallel(x):
     y = torch.flip(x, (3,)) * seq
     return y
 
-def conv2d_parallel(x, h, p, s, C):
+def conv2d_parallel(x, h, padding, stride, channels):
     x_reshape = x.reshape(-1, x.shape[-2], x.shape[-1])
     h_reshape = h.reshape(-1, 1, h.shape[-2], h.shape[-1])
     # print(x_reshape.shape, h_reshape.shape)
-    out = F.conv2d(x_reshape, h_reshape, padding=p, stride=s, groups=C*x.shape[0])
+    if padding == None:
+        out = F.conv2d(x_reshape, h_reshape, stride=stride, groups=channels*x.shape[0])
+    else:
+        out = F.conv2d(x_reshape, h_reshape, padding=padding, stride=stride, groups=channels*x.shape[0])
     # print(out.shape)
     return out.reshape(-1, h.shape[1], out.shape[-2], out.shape[-1])
 
-def conv_transpose2d_parallel(lo, hi, g0, g1, pad, s, C=None):
+def conv_transpose2d_parallel(lo, hi, g0, g1, padding, stride, channels=None):
 
     lo_reshape = lo.reshape(-1, lo.shape[-2], lo.shape[-1])
     hi_reshape = hi.reshape(-1, hi.shape[-2], hi.shape[-1])
@@ -199,10 +202,13 @@ def conv_transpose2d_parallel(lo, hi, g0, g1, pad, s, C=None):
     g1_reshape = g1.reshape(-1, 1, g1.shape[-2], g1.shape[-1])
     # print(lo.shape, hi.shape, lo_reshape.shape, hi_reshape.shape)
     # print(g0.shape, g1.shape, g0_reshape.shape, g1_reshape.shape)
-
-    out = F.conv_transpose2d(lo_reshape, g0_reshape, stride=s, padding=pad, groups=C*lo.shape[0]) + \
-    F.conv_transpose2d(hi_reshape, g1_reshape, stride=s, padding=pad, groups=C*lo.shape[0])
-    return out.reshape(-1, C, out.shape[-2], out.shape[-1])
+    if padding == None:
+        out = F.conv_transpose2d(lo_reshape, g0_reshape, stride=stride, groups=channels*lo.shape[0]) + \
+        F.conv_transpose2d(hi_reshape, g1_reshape, stride=stride, groups=channels*lo.shape[0])
+    else:
+        out = F.conv_transpose2d(lo_reshape, g0_reshape, stride=stride, padding=padding, groups=channels*lo.shape[0]) + \
+        F.conv_transpose2d(hi_reshape, g1_reshape, stride=stride, padding=padding, groups=channels*lo.shape[0])
+    return out.reshape(-1, channels, out.shape[-2], out.shape[-1])
     
 def conv1d_parallel(input, filters, padding, stride, groups=None):
     # v = F.conv1d(h0, h0, stride=2, padding=n)
@@ -394,3 +400,68 @@ def get_2dfilts(w_transform):
 
     else:
         raise ValueError('no such type of wavelet transform is supported')
+
+def coeffs_to_array2D(coeffs, padding=0, axes=None):
+    """
+        +---------------+---------------+-------------------------------+
+        |               |               |                               |
+        |     c[0]      |  c[1]['da']   |                               |
+        |               |               |                               |
+        +---------------+---------------+           c[2]['da']          |
+        |               |               |                               |
+        | c[1]['ad']    |  c[1]['dd']   |                               |
+        |               |               |                               |
+        +---------------+---------------+ ------------------------------+
+        |                               |                               |
+        |                               |                               |
+        |                               |                               |
+        |          c[2]['ad']           |           c[2]['dd']          |
+        |                               |                               |
+        |                               |                               |
+        |                               |                               |
+        +-------------------------------+-------------------------------+
+    """
+    with torch.no_grad():
+        a_coeffs = coeffs[0].squeeze()
+        C, H, W = a_coeffs.shape
+        num_layers = len(coeffs)
+
+        if len(coeffs) == 1:
+            # only a single approximation coefficient array was found
+            return a_coeffs
+        
+        matrix = torch.zeros(C, H*(2**(num_layers-1)), W*(2**(num_layers-1)), requires_grad=False)
+
+        matrix[:,0:H,0:W] = a_coeffs
+
+        for itr in range(num_layers-1, 0, -1):
+            coffH, coffV, coffD = coeffs[itr].squeeze()
+            s = coffD.shape
+            matrix[:,H:H+s[1],W:W+s[2]] = coffD
+            matrix[:,H:H+s[1],0:s[2]] = coffH
+            matrix[:,0:s[1],W:W+s[2]] = coffV
+            H *= 2
+            W *= 2
+        
+        return matrix
+    
+def compression(coeffs, percentage):
+
+    with torch.no_grad():
+        # Finding the threshold value for compressed version of the image
+        to_be_sorted = []
+        for itr, layer in enumerate(coeffs):
+            flattened = torch.flatten(layer)
+            to_be_sorted.append(flattened)
+
+        sorted, indices = torch.abs(torch.cat(to_be_sorted).flatten()).sort(descending=True)
+        threshold = sorted[int(percentage * sorted.shape[0])]
+        print(f"New Number of Coefficients = {int(percentage * sorted.shape[0])} out of {sorted.shape[0]}")
+
+        new_coeffs = coeffs
+        for itr, val in enumerate(new_coeffs):
+            mask = (val < threshold) & (val > -threshold)
+            # Set values below the threshold to zero
+            val[mask] = 0
+        
+    return new_coeffs

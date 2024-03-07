@@ -7,7 +7,7 @@ from config import *
 import time
 from icecream import ic
 import pywt
-
+import os
 from torchvision import datasets, transforms, models
 
 
@@ -26,14 +26,12 @@ def train1d(data, filter_model, device):
 def train2d(data, filter_model, device):
     
     # Initializing
-    awt = DWT2d(filter_model = filter_model, J=5, device=device, useExistingFilter=True, wave='db3').to(device=device)
+    awt = DWT2d(filter_model = filter_model, J=LEVEL, device=device, useExistingFilter=False, wave='db3').to(device=device)
     # Test Data
     data_test = torch.load('data/cifar10_test.pth')
     # Training
-    awt.fit(X=data, X_test=None, batch_size = BATCH_SIZE, num_epochs = NUM_EPOCHS, lr= LR)
-
-    name = f"models/{awt.__module__}__BATCH-{BATCH_SIZE}__EPOCH-{NUM_EPOCHS}__DATA-{DATA_NAME}__FILTER-{OUT_CHANNELS}__TIME-{time.time()}.pth"
-    torch.save(awt, name)
+    awt.fit(X=data, X_test=data_test, batch_size = BATCH_SIZE, num_epochs = NUM_EPOCHS, lr= LR)
+    return awt 
 
 if __name__ == "__main__":
     
@@ -79,7 +77,11 @@ if __name__ == "__main__":
     data = torch.load(DATA_PATH).to(device)
     ic(data.shape)
 
-    """Train the model. 
-    """
-    train2d(data, model, device)
+    """Train the model"""
+    awt = train2d(data, model, device)
+    if not os.path.exists(f'models/{awt.__module__}/'):
+        os.mkdir(f'models/{awt.__module__}/')
+
+    name = f"models/{awt.__module__}/filtersize_{OUT_CHANNELS}-batchsize_{BATCH_SIZE}-epochs_{NUM_EPOCHS}-LR_{LR}-J{LEVEL}.pth"
+    torch.save(awt, name)
     # train1d(data, model, device)

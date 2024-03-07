@@ -31,7 +31,7 @@ class DWT1d(AbstractWT):
     '''
 
     # The default values are mentioned.
-    def __init__(self, wave='db3',filter_model = None, mode='zero', J=5, init_factor=1, noise_factor=0, const_factor=0, device='cpu'):
+    def __init__(self, wave='db3',filter_model = None, mode='periodization', J=5, init_factor=1, noise_factor=0, const_factor=0, device='cpu'):
         super().__init__()
         # Load the wavelet from pywt
         h0, _ = lowlevel.load_wavelet(wave)

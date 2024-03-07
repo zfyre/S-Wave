@@ -24,44 +24,153 @@ from icecream import ic
 # print(h_f)
 # -------------------------------------------
 """Visualizing trained 2D model on CIFAR-10"""
+# def denormalize(img):
+#     mean = torch.tensor([0.5, 0.5, 0.5]).view(3, 1, 1)
+#     std = torch.tensor([0.5, 0.5, 0.5]).view(3, 1, 1)
+#     img = img * std + mean  # Apply the reverse formula
+#     return img
+
+# # Make sure to clip the values to [0, 1] if you're planning to visualize the images
+# # img_denormalized = denormalize(img)
+# # img_denormalized.clamp_(0, 1)
+
+# awt = torch.load('models/awave.transform2d__BATCH-512__EPOCH-1__DATA-all-losses__FILTER-20__TIME-1708893136.8584223.pth')
+
+# data = torch.load('data/cifar10_test.pth')
+# # plt.imshow(denormalize(data[1]).permute(1, 2, 0))
+# # plt.title("Original Image")
+# # plt.show()
+
+# s = data[1].shape
+# img = data[1].reshape(1, s[0], s[1], s[2])
+# coeffs = awt.forward(img)
+# recon_x = awt.inverse(coeffs)
+# recon_x = recon_x.squeeze().detach()
+
+# plt.imshow(denormalize(recon_x).permute(1, 2, 0))
+# plt.title("Approximation Image")
+# plt.show()
+
+# -------------------------------------------
+"""Visualizing the trained 2D model's filters and reconstruction and images."""
+import torch
+import numpy as np
+import matplotlib.pyplot as plt
+
+from torchvision import transforms
+from PIL import Image
+from awave.utils.misc import low_to_high
+
+
 def denormalize(img):
     mean = torch.tensor([0.5, 0.5, 0.5]).view(3, 1, 1)
     std = torch.tensor([0.5, 0.5, 0.5]).view(3, 1, 1)
     img = img * std + mean  # Apply the reverse formula
     return img
 
-# Make sure to clip the values to [0, 1] if you're planning to visualize the images
-# img_denormalized = denormalize(img)
-# img_denormalized.clamp_(0, 1)
+def plot2D(model):
+    data = torch.load('data/cifar10_test.pth')
+    image = data[np.random.randint(0,10000)].to(model.device)
 
-awt = torch.load('models/awave.transform2d__BATCH-512__EPOCH-1__DATA-all-losses__FILTER-20__TIME-1708893136.8584223.pth')
+    s = image.shape
+    image = image.reshape(1, s[0], s[1], s[2])
+    coeffs = model.forward(image)
+    # print(coeffs)
+    recon_x = model.inverse(coeffs)
 
+    recon_x = recon_x.squeeze().detach().cpu()
+    image = image.squeeze().detach().cpu()
+    
+    fig, axes = plt.subplots(1, 2, figsize=(10, 5))
+
+    # Original Image
+    axes[0].imshow(denormalize(image).permute(1, 2, 0))
+    axes[0].set_title("Original Image")
+    axes[0].axis('off')
+
+    # Approximation Image
+    axes[1].imshow(denormalize(recon_x).permute(1, 2, 0))
+    axes[1].set_title("Approximation Image")
+    axes[1].axis('off')
+
+    plt.show()
+
+def plot2DD(model, img):
+    image = img.to(device)
+    coeffs = model.forward(image)
+
+    recon_x = model.inverse(coeffs)
+
+    recon_x = recon_x.squeeze().detach().cpu()
+    image = image.squeeze().detach().cpu()
+    
+    fig, axes = plt.subplots(1, 2, figsize=(10, 5))
+
+    # Original Image
+    axes[0].imshow(denormalize(image).permute(1, 2, 0))
+    axes[0].set_title("Original Image")
+    axes[0].axis('off')
+
+    # Approximation Image
+    axes[1].imshow(denormalize(recon_x).permute(1, 2, 0))
+    axes[1].set_title("Approximation Image")
+    axes[1].axis('off')
+
+    plt.show()
+
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+awt = torch.load('models/awave.transform2d/filtersize_16-batchsize_64-epochs_50-LR_0.001-J16.pth')
 data = torch.load('data/cifar10_test.pth')
-# plt.imshow(denormalize(data[1]).permute(1, 2, 0))
-# plt.title("Original Image")
+image = data[np.random.randint(0,10000)].to(device)
+s = image.shape
+image = image.reshape([1, s[0], s[1], s[2]])
+low_pass_filter = awt.filter_model(image).squeeze()
+
+# # Normalizing to make sum = 0
+# low = low_pass_filter -  torch.mean(low_pass_filter)
+# high = low_to_high(low.reshape(1,1,-1)).squeeze()
+
+# fig, ax = plt.subplots(1,1,figsize=(10,5))
+# low = low.detach().numpy()
+# high = high.detach().numpy()
+
+# phi = np.convolve(low, low)
+# psi = np.convolve(high, low)
+
+
+# # Plot the scaling and wavelet functions
+# ax.plot(phi, label='Scaling Function (phi)')
+# ax.plot(psi, label='Wavelet Function (psi)')
+# plt.legend(loc='best')
 # plt.show()
 
-s = data[1].shape
-img = data[1].reshape(1, s[0], s[1], s[2])
-coeffs = awt.forward(img)
-recon_x = awt.inverse(coeffs)
-recon_x = recon_x.squeeze().detach()
+"""For plotting the original and approximate"""
+# plot2D(awt)
 
-plt.imshow(denormalize(recon_x).permute(1, 2, 0))
-plt.title("Approximation Image")
-plt.show()
+
+
+""" Elon Musk Transform"""
+img = Image.open("material/licensed-image.jpg")
+transform = transforms.Compose([
+    transforms.ToTensor(),
+    transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+])
+img = transform(img)
+print(img.shape)
+s1 = img.shape
+img = img.reshape([1, s1[0], s1[1], s1[2]])
+plot2DD(awt, img)
 
 # -------------------------------------------
-from visualization import plot2D, plot2DPrime
+# from visualization import plot2D, plot2DPrime
 
-data = torch.load('data/cifar10_test.pth')
-plt.imshow(denormalize(data[69]).permute(1, 2, 0))
-plt.title("Original Image")
-plt.show()
-img = denormalize(data[69])
-plot2DPrime(img.detach().numpy())
-
-
+# data = torch.load('data/cifar10_test.pth')
+# plt.imshow(denormalize(data[69]).permute(1, 2, 0))
+# plt.title("Original Image")
+# plt.show()
+# img = denormalize(data[69])
+# plot2DPrime(img.detach().numpy())
 
 # -------------------------------------------
 # h0 = torch.rand([32, 1, 1, 8])

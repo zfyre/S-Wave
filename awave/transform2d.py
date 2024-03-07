@@ -25,12 +25,6 @@ def _get_h0(filter_model, x, useExistingFilter = False, wave='db3', init_factor=
 
     return h0
 
-def denormalize(img):
-    mean = torch.tensor([0.5, 0.5, 0.5]).view(3, 1, 1)
-    std = torch.tensor([0.5, 0.5, 0.5]).view(3, 1, 1)
-    img = img * std + mean  # Apply the reverse formula
-    return img
-
 class DWT2d(AbstractWT):
     '''Class of 2d wavelet transform 
     Params
@@ -50,7 +44,7 @@ class DWT2d(AbstractWT):
         A Predefine nn.Module object for determnining filters as a model
     '''
 
-    def __init__(self, wave='db3', filter_model = None, mode='zero', J=5, init_factor=1, noise_factor=0, const_factor=0, device='cpu', useExistingFilter = False):
+    def __init__(self, wave='db3', filter_model = None, mode='periodization', J=5, init_factor=1, noise_factor=0, const_factor=0, device='cpu', useExistingFilter = False):
         super().__init__()
         h0, _ = lowlevel.load_wavelet(wave)
 

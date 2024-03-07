@@ -10,18 +10,20 @@ countsg = 0
 
 def plot_filter_banks(low, high):
     
-    fig, ax = plt.subplots(2,1,figsize=(10,5))
+    fig, ax = plt.subplots(1,1,figsize=(10,5))
 
-    low = low.detach().numpy()
-    high = high.detach().numpy()
+    low = low.squeeze().detach().numpy()
+    high = high.squeeze().detach().numpy()
 
     phi = np.convolve(low, low)
     psi = np.convolve(high, low)
 
     # Plot the scaling and wavelet functions
-    ax[0].plot(phi, label='Scaling Function (phi)')
-    ax[0].plot(psi, label='Wavelet Function (psi)')
+    ax.plot(phi, label='Scaling Function (phi)')
+    ax.plot(psi, label='Wavelet Function (psi)')
+    plt.legend(loc='best')
     plt.plot()
+    # plt.show()
 
 
 def plot_waveform(waveform, sample_rate):
@@ -158,13 +160,14 @@ def plot_loss(train_losses : list):
 
     # Displaying the plot
     plt.show()
+
 def denormalize(img):
     mean = torch.tensor([0.5, 0.5, 0.5]).view(3, 1, 1)
     std = torch.tensor([0.5, 0.5, 0.5]).view(3, 1, 1)
     img = img * std + mean  # Apply the reverse formula
     return img
 
-def plot2D(model):
+def plot2DCifarTest(model):
     data = torch.load('data/cifar10_test.pth')
     image = data[np.random.randint(0,10000)].to(model.device)
 
@@ -191,40 +194,14 @@ def plot2D(model):
 
     plt.show()
 
-def plot2DPrime(image):
-    print(image.shape)
-    # Splitting channels
-    r, g, b = image
-
-    # Wavelet transform of each channel, and plot approximation and details
-    titles = ['Approximation', ' Horizontal detail',
-              'Vertical detail', 'Diagonal detail']
-    cmaps = ['Reds', 'Greens', 'Blues']
-    fig = plt.figure(figsize=(12, 3))
-    
-    for i, channel in enumerate([r, g, b]):
-        coeffs2 = pywt.dwt2(channel, 'bior1.3')
-        LL, (LH, HL, HH) = coeffs2
-        print(LL.shape)
-        for j, a in enumerate([LL, LH, HL, HH]):
-            ax = fig.add_subplot(3, 4, i * 4 + j + 1)
-            ax.imshow(a, interpolation="nearest", cmap=cmaps[i])
-            ax.set_title(titles[j], fontsize=10)
-            ax.set_xticks([])
-            ax.set_yticks([])
-
-    fig.tight_layout()
-    plt.show()
 
 
-
-def plot2DD(model, image):
-    data = torch.load('data/cifar10_test.pth')
-    # image = data[np.random.randint(0,10000)].to(model.device)
-
+def plot2DimageWithModel(model, image, coeffs = None):
     s = image.shape
-    image = image.reshape(1, s[0], s[1], s[2]).to(model.device)
-    coeffs = model(image)
+    if s != [1, s[-3], s[-2], s[-1]]:
+        image = image.reshape(1, s[-3], s[-2], s[-1]).to(model.device)
+    if coeffs == None:
+        coeffs = model(image)
     recon_x = model.inverse(coeffs)
 
     recon_x = recon_x.squeeze().detach().cpu()
@@ -236,9 +213,9 @@ def plot2DD(model, image):
     axes[0].imshow(denormalize(image).permute(1, 2, 0))
     axes[0].set_title("Original Image")
     axes[0].axis('off')
-    r, g, b = recon_x
+
     # Approximation Image
-    axes[1].imshow(denormalize(r).permute(1, 2, 0), cmap='gray')
+    axes[1].imshow(denormalize(recon_x).permute(1, 2, 0), cmap='gray')
     axes[1].set_title("Approximation Image")
     axes[1].axis('off')
 

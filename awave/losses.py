@@ -106,7 +106,8 @@ class Loss():
         if self.lamConv > 0:
             self.conv_loss += _conv_loss_parallel(w_transform)
 
-        # L1 penalty on wavelet coeffs
+        # L1 penalty on wavelet coeffs 
+        # To Promote the sparsity of the coefficients obtained.
         self.L1wave_loss = 0
         if self.lamL1wave > 0:
             self.L1wave_loss += _L1_wave_loss(data_t)
@@ -117,6 +118,7 @@ class Loss():
             self.L1attr_loss += _L1_attribution_loss(attributions)
 
         # Penalty on high frequency of h0  
+        # To promote the filter beinga low pass filter only !!
         self.highfreq_loss = 0
         if self.lamHighfreq > 0:
             self.highfreq_loss += _penalty_high_freq(w_transform)

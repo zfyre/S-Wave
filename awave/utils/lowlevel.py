@@ -7,6 +7,7 @@ from torch.autograd import Function
 from awave.utils.misc import reflect, conv2d_parallel, conv_transpose2d_parallel
 
 from  icecream import ic
+import pywt
 
 def load_wavelet(wave: str, device=None):
     '''load wavelet from pywt (currently only allow orthogonal wavelets): for initializing the filters.
@@ -94,7 +95,8 @@ def afb1d(x, h0, h1, mode='zero', dim=-1):
             N += 1
         x = roll(x, -L2, dim=d)
         pad = (L - 1, 0) if d == 2 else (0, L - 1)
-        lohi = F.conv2d(x, h, padding=pad, stride=s, groups=C)
+        lohi = lohi_ = conv2d_parallel(x, h, padding=pad, stride=s, channels=C)
+        # lohi = F.conv2d(x, h, padding=pad, stride=s, groups=C)
         N2 = N // 2
         if d == 2:
             lohi[:, :, :L2] = lohi[:, :, :L2] + lohi[:, :, N2:N2 + L2]
@@ -126,14 +128,15 @@ def afb1d(x, h0, h1, mode='zero', dim=-1):
             #     lohi.append(F.conv2d(x[idx], h[idx], padding=pad, stride=s, groups=C))
             # lohi = torch.stack(lohi)
 
-            lohi = lohi_ = conv2d_parallel(x, h, pad, s, C)
+            lohi = lohi_ = conv2d_parallel(x, h, padding=pad, stride=s, channels=C)
 
             # print(lohi.shape, lohi_.shape)
             # assert torch.equal(lohi, lohi_)
         elif mode == 'symmetric' or mode == 'reflect' or mode == 'periodic':
             pad = (0, 0, p // 2, (p + 1) // 2) if d == 2 else (p // 2, (p + 1) // 2, 0, 0)
             x = mypad(x, pad=pad, mode=mode)
-            lohi = F.conv2d(x, h, stride=s, groups=C)
+            lohi = lohi_ = conv2d_parallel(x, h, padding=None, stride=s, channels=C)
+            # lohi = F.conv2d(x, h, stride=s, groups=C)
         else:
             raise ValueError("Unkown pad type: {}".format(mode))
     return lohi
@@ -170,8 +173,7 @@ def sfb1d(lo, hi, g0, g1, mode='zero', dim=-1):
     # print(lo[0], hi[0])
     # assert False
     if mode == 'per' or mode == 'periodization':
-        y = F.conv_transpose2d(lo, g0, stride=s, groups=C) + \
-            F.conv_transpose2d(hi, g1, stride=s, groups=C)
+        y = y_ = conv_transpose2d_parallel(lo, hi, g0, g1, padding=None, stride=s, channels=C)
         if d == 2:
             y[:, :, :L - 2] = y[:, :, :L - 2] + y[:, :, N:N + L - 2]
             y = y[:, :, :N]
@@ -194,7 +196,7 @@ def sfb1d(lo, hi, g0, g1, mode='zero', dim=-1):
             #                  F.conv_transpose2d(hi[idx], g1[idx], stride=s, padding=pad, groups=C)
             #     )
             # y = torch.stack(y)
-            y = y_ = conv_transpose2d_parallel(lo, hi, g0, g1, pad, s, C)
+            y = y_ = conv_transpose2d_parallel(lo, hi, g0, g1, padding=pad, stride=s, channels=C)
             # assert torch.equal(y, y_)
 
         else:
