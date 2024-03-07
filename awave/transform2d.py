@@ -1,6 +1,6 @@
 import torch
 import torch.nn as nn
-
+import numpy as np
 from awave.utils import lowlevel
 from awave.transform import AbstractWT
 from awave.utils.misc import init_filter, low_to_high, low_to_high_parallel
@@ -100,7 +100,7 @@ class DWT2d(AbstractWT):
 
 
         # Do a multilevel transform
-        for j in range(self.J):
+        for j in range(np.random.randint(1,self.J)):
             # Do 1 level of the transform
             ll, high = lowlevel.AFB2D.forward(
                 ll, h0_col, h1_col, h0_row, h1_row, mode)

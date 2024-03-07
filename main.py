@@ -28,7 +28,7 @@ def train2d(data, filter_model, device):
     # Initializing
     awt = DWT2d(filter_model = filter_model, J=LEVEL, device=device, useExistingFilter=False, wave='db3').to(device=device)
     # Test Data
-    data_test = torch.load('data/cifar10_test.pth')
+    data_test = torch.load(f'data/{DATA_NAME}_test.pth')
     # Training
     awt.fit(X=data, X_test=data_test, batch_size = BATCH_SIZE, num_epochs = NUM_EPOCHS, lr= LR)
     return awt 
@@ -74,7 +74,7 @@ if __name__ == "__main__":
     # ic(model(x1[0]).shape)
 
     """ Following line for CIFAR10 dataset"""
-    data = torch.load(DATA_PATH).to(device)
+    data = torch.load(f'data/{DATA_NAME}_train.pth').to(device)
     ic(data.shape)
 
     """Train the model"""

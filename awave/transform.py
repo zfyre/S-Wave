@@ -97,7 +97,7 @@ class AbstractWT(nn.Module):
 
         # Actual training
         self.train()
-        trainer(train_loader, epochs=num_epochs, test_loader=test_loader)
+        trainer(train_loader, epochs=num_epochs, test_loader=test_loader, initial_epochs=1) # Initial Epochs is for inital weights adjustment according to the desired wavelet filters required.
         self.train_losses = trainer.train_losses
         self.eval()
 

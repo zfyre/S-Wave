@@ -167,9 +167,10 @@ def denormalize(img):
     img = img * std + mean  # Apply the reverse formula
     return img
 
-def plot2DCifarTest(model):
-    data = torch.load('data/cifar10_test.pth')
-    image = data[np.random.randint(0,10000)].to(model.device)
+def plot2DTestData(model, dataset = 'cifar10'):
+    data = torch.load(f'data/{dataset}_test.pth')
+    length = len(data)
+    image = data[np.random.randint(0,length)].to(model.device)
 
     s = image.shape
     image = image.reshape(1, s[0], s[1], s[2])

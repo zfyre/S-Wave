@@ -2,7 +2,7 @@ from copy import deepcopy
 from awave.utils.misc import plot_grad_flow, initialize_weights, low_to_high, initialize_weights_he
 import numpy as np
 import torch
-from visualization import plot2DCifarTest
+from visualization import plot2DTestData
 
 from icecream import ic
 import pywt
@@ -58,7 +58,7 @@ class Trainer():
         self.n_print = n_print
 
     # The function That gets called when a Trainer object is called.
-    def __call__(self, train_loader, test_loader=None, epochs=10):
+    def __call__(self, train_loader, test_loader=None, epochs=10, initial_epochs = 1):
         """
         Trains the model.
 
@@ -77,6 +77,14 @@ class Trainer():
         print('\033[92m'+ "Starting Training Loop..."+'\033[0m')
         self.train_losses = np.empty(epochs)
         self.test_losses = np.empty(epochs)
+
+        for epoch in range(initial_epochs):
+            mean_epoch_loss  = self._train_initial_epoch(train_loader, epoch)
+            mean_epoch_test_loss  = self._test_initial_epoch(test_loader, epoch)
+            if epoch % self.n_print == 0:
+                print('\033[92m'+'\n====> Init-Epoch: {} Average train loss: {:.4f} (Test set loss: {:.4f})'.format(epoch,
+                                                                                                        mean_epoch_loss,
+                                                                                                        mean_epoch_test_loss)+'\033[0m')
         for epoch in range(epochs):
             if test_loader is not None:
                 mean_epoch_loss = self._train_epoch(train_loader, epoch)
@@ -154,7 +162,70 @@ class Trainer():
         # ------------------------------------------
 
         return mean_epoch_loss
+    
+    def _train_initial_epoch(self, data_loader, epoch, wavelet = 'db3'):
+        """
+        Trains the model for one init-epoch.
 
+        Parameters
+        ----------
+        epoch: int
+            Epoch number
+        wavelet = 'haar', 'db2' etc. 
+        data_loader: torch.utils.data.DataLoader
+
+        Return
+        ------
+        mean_init-epoch_loss: float
+        """
+
+        self.w_transform.train()
+        epoch_loss = 0.
+        for batch_idx, (data, _) in enumerate(data_loader):
+            iter_loss = self._train_initial_iteration(data)
+            epoch_loss += iter_loss
+            if epoch % self.n_print == 0:
+                print('\rTrain Init-Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
+                    epoch, (batch_idx+1) * len(data), len(data_loader.dataset),
+                           100. * (batch_idx+1) / len(data_loader), iter_loss), end='')
+
+        mean_epoch_loss = epoch_loss / (batch_idx + 1)
+
+        if self.lr_scheduler is not None:
+            self.lr_scheduler.step()
+            
+        self.w_transform.eval()
+
+        return mean_epoch_loss
+
+    def _train_initial_iteration(self, data):
+        """
+        Trains the model for one iteration on a 'batch' of data.
+
+        Parameters
+        ----------
+        data: torch.Tensor
+            A batch of data. Shape : (batch_size, channel, height, width).
+            
+        """
+        data = data.to(self.device)
+        # zero grad
+        self.optimizer.zero_grad()
+        # transform
+        data_t = self.w_transform(data)
+        # reconstruction
+        recon_data = self.wt_inverse(data_t)
+
+        # loss
+        loss = self.loss_f(self.w_transform, data, recon_data, data_t, initial_filter_loss=True)
+        # backward
+        loss.backward()
+
+        # update step
+        self.optimizer.step()
+
+        return loss.item()
+    
     def _train_iteration(self, data):
         """
         Trains the model for one iteration on a 'batch' of data.
@@ -218,7 +289,7 @@ class Trainer():
         ------
         mean_epoch_loss: float
         """
-        plot2DCifarTest(self)
+        plot2DTestData(self, 'stl10')
         self.w_transform.eval()
         epoch_loss = 0.
         for batch_idx, (data, _) in enumerate(data_loader):
@@ -235,3 +306,38 @@ class Trainer():
 
         mean_epoch_loss = epoch_loss / (batch_idx + 1)
         return mean_epoch_loss
+    
+    def _test_initial_epoch(self, data_loader, wavelet = 'db2'):
+        """
+        Tests the model for one epoch.
+
+        Parameters
+        ----------
+        data_loader: torch.utils.data.DataLoader
+
+        epoch: int
+            Epoch number
+        
+        wavelet: 'harr', 'db2' etc
+
+        Return
+        ------
+        mean_epoch_loss: float
+        """
+        plot2DTestData(self, 'stl10')
+        self.w_transform.eval()
+        epoch_loss = 0.
+        for batch_idx, (data, _) in enumerate(data_loader):
+            data = data.to(self.device)
+            data_t = self.w_transform(data)
+            recon_data = self.wt_inverse(data_t)
+            loss = self.loss_f(self.w_transform, data, recon_data, data_t, initial_filter_loss = True)
+            iter_loss = loss.item()
+            epoch_loss += iter_loss
+            print('\rInit-Test: [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(batch_idx * len(data), len(data_loader.dataset),
+                                                                   100. * batch_idx / len(data_loader), iter_loss), end
+                  ='')
+
+        mean_epoch_loss = epoch_loss / (batch_idx + 1)
+        return mean_epoch_loss
+

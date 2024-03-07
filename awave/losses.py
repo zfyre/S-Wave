@@ -2,9 +2,10 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 from icecream import ic
+import pywt
 
-from awave.utils.misc import low_to_high, conv1d_parallel
-
+from awave.utils.misc import low_to_high, conv1d_parallel, init_filter
+from awave.utils.lowlevel import load_wavelet
 
 def get_loss_f(**kwargs_parse):
     """Return the loss function given the argparse arguments."""
@@ -56,7 +57,7 @@ class Loss():
         self.lamL1attr = lamL1attr
         self.lamHighfreq = lamHighfreq
 
-    def __call__(self, w_transform, data, recon_data, data_t, attributions=None):
+    def __call__(self, w_transform, data, recon_data, data_t, attributions=None, initial_filter_loss = False):
         """
         Parameters
         ----------
@@ -123,6 +124,9 @@ class Loss():
         if self.lamHighfreq > 0:
             self.highfreq_loss += _penalty_high_freq(w_transform)
 
+        if initial_filter_loss == True:
+            return _initial_filter_loss(w_transform, wavelet='db3')
+            
         # Total loss
         loss = self.rec_loss \
                 + self.lamL2norm * self.L2norm_loss \
@@ -162,6 +166,18 @@ def _reconstruction_loss(data, recon_data): # DONE!!
 
     return loss
 
+def _initial_filter_loss(w_transform, wavelet='db3', init_factor=1, noise_factor=0, const_factor=0):
+    """
+    Calculate loss with the specified wavelet
+    """
+    h0 = w_transform.h0.squeeze()
+    batch_size = h0.shape[0]
+    H0, _ = load_wavelet(f'db{h0.shape[1]//2}')
+    H0 = init_filter(H0, init_factor, noise_factor, const_factor)
+    H0 = torch.stack([H0]*batch_size).squeeze()
+    assert H0.shape == h0.shape
+    loss = .5 * (h0 - H0) ** 2
+    return loss.sum() / batch_size
 
 def _lsum_loss(w_transform): # DONE!! -> We want the sum = root(2)
     """
