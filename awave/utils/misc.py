@@ -422,12 +422,12 @@ def coeffs_to_array2D(coeffs, padding=0, axes=None):
         +-------------------------------+-------------------------------+
     """
     with torch.no_grad():
-        a_coeffs = coeffs[0].squeeze()
+        a_coeffs = coeffs[0][0]
         C, H, W = a_coeffs.shape
         num_layers = len(coeffs)
 
-        if len(coeffs) == 1:
-            # only a single approximation coefficient array was found
+        # only a single approximation coefficient array was found
+        if num_layers == 1:
             return a_coeffs
         
         matrix = torch.zeros(C, H*(2**(num_layers-1)), W*(2**(num_layers-1)), requires_grad=False)
@@ -435,7 +435,7 @@ def coeffs_to_array2D(coeffs, padding=0, axes=None):
         matrix[:,0:H,0:W] = a_coeffs
 
         for itr in range(num_layers-1, 0, -1):
-            coffH, coffV, coffD = coeffs[itr].squeeze()
+            coffH, coffD, coffV = coeffs[itr][0]
             s = coffD.shape
             matrix[:,H:H+s[1],W:W+s[2]] = coffD
             matrix[:,H:H+s[1],0:s[2]] = coffH

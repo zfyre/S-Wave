@@ -23,15 +23,17 @@ def low_to_high(x):
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # Load the Model
-# awt2 = torch.load('models/2D_waveletModel.pth', map_location=device).to(device)
-awt2 = torch.load('models/awave.transform2d/filtersize_16-batchsize_64-epochs_50-LR_0.001-J16.pth')
-awt = DWT2d(filter_model = awt2.filter_model, J=16, device=device, useExistingFilter=False, wave='db3').to(device=device)
+awt2 = torch.load('models/awave.transform2d/2D_STL10WaveletTransformJ16.pth', map_location=device).to(device)
+# awt2 = torch.load('models/awave.transform2d/filtersize_16-batchsize_64-epochs_50-LR_0.001-J16.pth')
+model = awt2.filter_model
+model.eval()
+awt = DWT2d(filter_model = model, J=6, device=device, useExistingFilter=False, wave='db3').to(device=device)
 
 # awt = torch.load('models/awave.transform2d/filtersize_16-batchsize_64-epochs_5-LR_0.001.pth')
 # awt = DWT2d(filter_model = awt_2.filter_model, J=2, device=awt_2.device, useExistingFilter=False, wave='db3',mode='periodization').to(device=awt_2.device)
 
 # Load the Image
-data = torch.load('data/cifar10_test.pth')
+data = torch.load('data/stl10_test.pth')
 image = data[np.random.randint(0,len(data))].to(device)
 
 # Uncomment to load cameraman!!
@@ -53,13 +55,13 @@ image = data[np.random.randint(0,len(data))].to(device)
 
 # Convert the image to gray-scale
 # image = transforms.Grayscale(num_output_channels=1)(image)
+
 s = image.shape
 print(s)
 image = image.reshape([1, s[0], s[1], s[2]])
 
-
-# image_input_to_model = torch.cat([image]*3, dim=1)
 image_input_to_model = image
+# image_input_to_model = torch.cat([image]*3, dim=1)
 # print(image_input_to_model.shape)
 low_pass_filter = awt.filter_model(image_input_to_model)
 high_pass_filter = low_to_high(low_pass_filter)
@@ -70,6 +72,7 @@ high_pass_filter = low_to_high(low_pass_filter)
 
 # Getting the coefficients of the Wavelet Transform
 coeffs = awt(image_input_to_model)
+print(coeffs[0].shape)
 
 plot2DimageWithModel(awt, image_input_to_model, coeffs)
     
@@ -77,10 +80,15 @@ with torch.no_grad():
     # Assuming temp_coeffs is a tuple
     temp_coeffs = tuple(coeffs[i]/torch.abs(coeffs[i]).max() for i in range(len(coeffs)))
 arr = coeffs_to_array2D(temp_coeffs)
-plt.imshow(arr.permute(1, 2, 0))
+# plt.imshow(arr.permute(1, 2, 0))
+plt.imshow(torch.abs(arr[0]), cmap='gray')
+plt.colorbar()
 plt.show()
 
 
 # Finding the new reconstructions with the new coefficients.
-new_coeffs = compression(coeffs, 0.2)
+new_coeffs = compression(coeffs, 0.25)
+new_arr = coeffs_to_array2D(new_coeffs)
+plt.imshow(torch.abs(new_arr[0]), cmap='gray')
+plt.colorbar()
 plot2DimageWithModel(awt, image_input_to_model, new_coeffs)

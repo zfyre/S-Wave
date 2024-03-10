@@ -4,3 +4,5 @@ __pycache__
 models/
 res/
 cifar_10.zip
+attacks.py
+imagenet_classes.txt
