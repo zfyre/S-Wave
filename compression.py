@@ -7,6 +7,7 @@ from PIL import Image
 from torchvision import transforms
 from visualization import plot2DimageWithModel, plot_filter_banks
 from awave.utils.misc import coeffs_to_array2D, compression
+from awave.utils.misc import get_wavefun
 
 # np.random.seed()
 
@@ -27,7 +28,7 @@ awt2 = torch.load('models/awave.transform2d/2D_STL10WaveletTransformJ16.pth', ma
 # awt2 = torch.load('models/awave.transform2d/filtersize_16-batchsize_64-epochs_50-LR_0.001-J16.pth')
 model = awt2.filter_model
 model.eval()
-awt = DWT2d(filter_model = model, J=6, device=device, useExistingFilter=False, wave='db3').to(device=device)
+awt = DWT2d(filter_model = model, J = 6, device=device, useExistingFilter=False, wave='db3').to(device=device)
 
 # awt = torch.load('models/awave.transform2d/filtersize_16-batchsize_64-epochs_5-LR_0.001.pth')
 # awt = DWT2d(filter_model = awt_2.filter_model, J=2, device=awt_2.device, useExistingFilter=False, wave='db3',mode='periodization').to(device=awt_2.device)
@@ -44,7 +45,7 @@ image = data[np.random.randint(0,len(data))].to(device)
 # ])
 # image = transform(image)
 
-## UnComment to load elon!!
+# UnComment to load elon!!
 # image = Image.open("material/licensed-image.jpg")
 # transform = transforms.Compose([
 #     transforms.ToTensor(),
@@ -67,7 +68,7 @@ low_pass_filter = awt.filter_model(image_input_to_model)
 high_pass_filter = low_to_high(low_pass_filter)
 
 # Plotting the wavelet and Scaling functions
-# plot_filter_banks(low_pass_filter, high_pass_filter)
+plot_filter_banks(low_pass_filter, level = 2)
 
 
 # Getting the coefficients of the Wavelet Transform
@@ -83,11 +84,11 @@ arr = coeffs_to_array2D(temp_coeffs)
 # plt.imshow(arr.permute(1, 2, 0))
 plt.imshow(torch.abs(arr[0]), cmap='gray')
 plt.colorbar()
-plt.show()
+# plt.show()
 
 
 # Finding the new reconstructions with the new coefficients.
-new_coeffs = compression(coeffs, 0.25)
+new_coeffs = compression(coeffs, 0.10)
 new_arr = coeffs_to_array2D(new_coeffs)
 plt.imshow(torch.abs(new_arr[0]), cmap='gray')
 plt.colorbar()

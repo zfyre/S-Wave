@@ -117,6 +117,28 @@ plt.show()
 
 
 """ Applying compressed Sensing on the Wavelet coefficients"""
+from scipy.fft import dct, idct
+from scipy.optimize import minimize
+from cosamp import cosamp
+
+
+x = concatenated_vector[0][0].detach().numpy()
+n = len(x)
+
+# Randomly sample signal
+p = 128 # num. random samples, p = n/32
+perm = np.floor(np.random.rand(p) * n).astype(int)
+y = x[perm]
+# Solve the compressed sensing problem
+Psi = dct(np.identity(n))
+print(Psi)
+Theta = Psi[perm, :]
+# print(Theta)
+
+s = cosamp(Theta, y, 10, epsilon=1.e-10, max_iter=10) # CS via matching pursuit
+xrecon = idct(s)
+
+
 
 
 

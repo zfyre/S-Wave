@@ -229,15 +229,21 @@ def conv1d_parallel(input, filters, padding, stride, groups=None):
 
     return output
 
-def get_wavefun(w_transform, level=5):
+def get_wavefun(low_pass_filter, level=5):
     '''Get wavelet function from wavelet object.
     Params
     ------
     w_transform: obj
         DWT1d or DWT2d object
     '''
-    h0 = w_transform.h0
-    h1 = low_to_high(h0)
+    h0 = low_pass_filter
+
+    # Modified low_to_high
+    if h0.shape != [1, 1, h0.shape[-1]]:
+        h0 = h0.reshape(1, 1, -1)
+    n = h0.size(2)
+    seq = (-1) ** torch.arange(n, device=h0.device)
+    h1 = torch.flip(h0, (0, 2)) * seq
 
     h0 = list(h0.squeeze().detach().cpu().numpy())[::-1]
     h1 = list(h1.squeeze().detach().cpu().numpy())[::-1]

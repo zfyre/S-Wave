@@ -1,29 +1,25 @@
 import pywt
 import torch
+from time import time
 import numpy as np
 import matplotlib.pyplot as plt
-from awave.utils.misc import low_to_high
+from awave.utils.misc import low_to_high, get_wavefun
 
 from icecream import ic
 countfb = 0
 countsg = 0
 
-def plot_filter_banks(low, high):
+def plot_filter_banks(low_pass_filter, level = 1):
     
-    fig, ax = plt.subplots(1,1,figsize=(10,5))
-
-    low = low.squeeze().detach().numpy()
-    high = high.squeeze().detach().numpy()
-
-    phi = np.convolve(low, low)
-    psi = np.convolve(high, low)
-
+    fig, ax = plt.subplots(1,1,figsize=(10,5)) 
+    phi, psi, x = get_wavefun(low_pass_filter, level=level)
     # Plot the scaling and wavelet functions
     ax.plot(phi, label='Scaling Function (phi)')
     ax.plot(psi, label='Wavelet Function (psi)')
     plt.legend(loc='best')
     plt.plot()
     # plt.show()
+    plt.savefig(f'res/{time()}.png')
 
 
 def plot_waveform(waveform, sample_rate):
@@ -220,4 +216,4 @@ def plot2DimageWithModel(model, image, coeffs = None):
     axes[1].set_title("Approximation Image")
     axes[1].axis('off')
 
-    plt.show()
+    # plt.show()
