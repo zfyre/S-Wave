@@ -18,8 +18,8 @@ def plot_filter_banks(low_pass_filter, level = 1):
     ax.plot(psi, label='Wavelet Function (psi)')
     plt.legend(loc='best')
     plt.plot()
-    # plt.show()
-    plt.savefig(f'res/{time()}.png')
+    plt.show()
+    # plt.savefig(f'res/{time()}.png')
 
 
 def plot_waveform(waveform, sample_rate):
@@ -216,4 +216,4 @@ def plot2DimageWithModel(model, image, coeffs = None):
     axes[1].set_title("Approximation Image")
     axes[1].axis('off')
 
-    # plt.show()
+    plt.show()
